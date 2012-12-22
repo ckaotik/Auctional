@@ -1,0 +1,33 @@
+## Interface: 50100
+## Version: @project-version@
+## Author: ckaotik
+
+## Title: Auctional
+## Notes: Integrated auction handling
+
+# OptionalDeps:
+## RequiredDeps: Blizzard_AuctionUI
+## SavedVariables: AuctionalGDB
+# SavedVariablesPerCharacter:
+
+# X-Website:
+## X-Category: Auction
+
+# libraries
+#@no-lib-strip@
+LibStub\LibStub.lua
+LibGraph-2.0\LibGraph-2.0.lua
+LibItemCrush-1.0\LibItemCrush-1.0.lua
+#@end-no-lib-strip@
+
+#localization
+
+# main files
+util.lua
+core.lua
+columns.lua
+sort.lua
+scan.lua
+sell.lua
+tooltip.lua
+api.lua

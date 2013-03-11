@@ -234,7 +234,7 @@ local function PrintScanStatistics(total)
 	if total <= 0 then
 		ns.Print("Full scan failed because of a Blizzard bug.")
 	else
-		ns.Print("Full scan completed. We scanned %d items, of which %d were invalid.", total, statistics['invalid'])
+		ns.Print("Full scan completed. We scanned %d auctions, of which %d were invalid.", total, statistics['invalid'])
 	end
 end
 

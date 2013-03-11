@@ -1,6 +1,6 @@
 local addonName, ns, _ = ...
 
--- GLOBALS: AuctionalGDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, BUYOUT_PRICE, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, UIParent
+-- GLOBALS: AuctionalGDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, UIParent
 -- GLOBALS: GetCoinTextureString, GetItemInfo, MoneyFrame_Update, IsModifierKeyDown, IsControlKeyDown
 -- GLOBALS: print, format, wipe, select, string, table, math, pairs
 
@@ -71,7 +71,7 @@ function ns.CreatePricingGraph(tip, itemLink)
 	local points, enchantPoints = GetHistoryDataPoints( ns.GetItemLinkData(itemLink) )
 	if points and #points > 1 then
 		if tip.AddLine then
-			tip:AddLine("Price History:\n|T:50:140|t") -- placeholder texture
+			tip:AddLine(PVP_RECORD.."\n|T:50:140|t") -- placeholder texture
 			local tipLine = tip:GetName().."TextLeft"..tip:NumLines()
 			graph:ClearAllPoints()
 			graph:SetPoint("BOTTOMLEFT", tipLine, "BOTTOMLEFT", 0, 2)
@@ -155,10 +155,10 @@ function ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
 
 	local auctionLabel
 	if (currentCount and currentCount > 0) then
-		auctionLabel = format(BUYOUT_PRICE.." (%s)", (currentCount and currentCount > 0 and currentCount))
+		auctionLabel = format(AUCTIONS.." (%s)", (currentCount and currentCount > 0 and currentCount))
 		auctionLabel = auctionLabel .. (stackSize and " x"..stackSize or "")
 	end
-	auctionLabel = auctionLabel or BUYOUT_PRICE
+	auctionLabel = auctionLabel or AUCTIONS
 
 	ns.AnyTooltipSetAuctionPrice(tip, auctionLabel, auctionText)
 end
@@ -222,7 +222,7 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	if not itemLink then return end
 
 	local itemType, _, stackSize = select(6, GetItemInfo(itemLink))
-	stackSize = (AuctionalGDB.showFullStackFunc() and stackSize > 1) and stackSize or nil
+	stackSize = (AuctionalGDB.showFullStackFunc() and stackSize and stackSize > 1) and stackSize or nil
 
 	if itemType == RECIPE then
 		if recipeCrafts[itemLink] == nil then recipeCrafts[itemLink] = GetRecipeItem(tip) end

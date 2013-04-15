@@ -177,8 +177,8 @@ local function ShowDisenchantDetails(tip, item, indent)
 			result = result and select(2, GetItemInfo(result))
 			if result and countText and chanceText then
 				-- tip:AddDoubleLine((indent or "")..chanceText.." "..item, countText)
-				textLeft = (textLeft ~= "" and textLeft.."\n" or "") .. (indent or "") .. result
-				textRight = (textRight ~= "" and textRight.."\n" or "") .. countText
+				textLeft = (textLeft ~= "" and textLeft.."\n" or "") .. (indent or "") .. countText .. " " .. result
+				textRight = (textRight ~= "" and textRight.."\n" or "") .. chanceText
 			end
 		end
 		deDetails[item] = textLeft.."_"..textRight

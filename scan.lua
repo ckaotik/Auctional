@@ -151,7 +151,7 @@ local function UpdateItem(list, index)
 		end
 		table.insert(scan.data[itemID], {itemLink, count, minBid, buyoutPrice, highBidder, owner})
 	elseif not quality or quality < AuctionalGDB.minQuality then
-		-- skip now quality items, but still enable explicit scans of these
+		-- skip low quality items, but still enable explicit scans of these
 		statistics['invalid'] = (statistics['invalid'] or 0) + 1
 		return
 	end
@@ -264,7 +264,15 @@ function scan.ScanStarted(...)
 		ResetScanStatistics()
 	else
 		-- if we get too many results, this information is essential
-		currentQueryArgs.name, currentQueryArgs.minLevel, currentQueryArgs.maxLevel, currentQueryArgs.invType, currentQueryArgs.itemClass, currentQueryArgs.itemSubClass, currentQueryArgs.page, currentQueryArgs.isUsable, currentQueryArgs.minQuality = ...
+		currentQueryArgs.name,
+		currentQueryArgs.minLevel,
+		currentQueryArgs.maxLevel,
+		currentQueryArgs.invType,
+		currentQueryArgs.itemClass,
+		currentQueryArgs.itemSubClass,
+		currentQueryArgs.page,
+		currentQueryArgs.isUsable,
+		currentQueryArgs.minQuality = ...
 	end
 	scan.ShowLoading(1,0.82,0)
 end

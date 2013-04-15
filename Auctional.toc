@@ -5,10 +5,10 @@
 ## Title: Auctional
 ## Notes: Integrated auction handling
 
-# OptionalDeps:
 ## RequiredDeps: Blizzard_AuctionUI
+## OptionalDeps:
 ## SavedVariables: AuctionalGDB
-# SavedVariablesPerCharacter:
+## SavedVariablesPerCharacter:
 
 # X-Website:
 ## X-Category: Auction

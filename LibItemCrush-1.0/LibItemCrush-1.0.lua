@@ -261,8 +261,8 @@ do
 		[WHITE_TRILLIUM_ORE] = { SPARKLING_SHARD, "1-2x", "100%", 1.5, 1,
 				IMPERIAL_AMETHYST, "1-2x", "17%", 1.5, .17,	RIVERS_HEART, 	"1-2x", "17%", 1.5, .17,	SUNS_RADIANCE, 	"1-2x", "17%", 1.5, .17,
 				PRIMORDIAL_RUBY, "1-2x", "17%", 1.5, .17,	VERMILLION_ONYX, "1-2x", "17%", 1.5, .17,	WILD_JADE, 		"1-2x", "17%", 1.5, .17,
-				ALEXANDRITE, 	"1x", "17%", 1, .17, 		LAPIS_LAZULI,	"1", "17%", 1, .17, 		PANDAREN_GARNET, "1x", "17%", 1, .17,
-				SUNSTONE, 		"1x", "17%", 1, .17, 		ROGUESTONE,		"1", "17%", 1, .17, 		TIGER_OPAL,		"1x", "17%", 1, .17, },
+				ALEXANDRITE, 	"1x", "17%", 1, .17, 		LAPIS_LAZULI,	"1x", "17%", 1, .17, 		PANDAREN_GARNET, "1x", "17%", 1, .17,
+				SUNSTONE, 		"1x", "17%", 1, .17, 		ROGUESTONE,		"1x", "17%", 1, .17, 		TIGER_OPAL,		"1x", "17%", 1, .17, },
 	}
 	lib.prospectData = prospectData
 

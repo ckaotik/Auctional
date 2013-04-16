@@ -1,0 +1,3 @@
+[submodule "LibItemCrush-1.0"]
+	path = LibItemCrush-1.0
+	url = git://github.com/ckaotik/LibItemCrush-1.0.git

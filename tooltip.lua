@@ -1,14 +1,14 @@
 local addonName, ns, _ = ...
 
 -- GLOBALS: AuctionalGDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, UIParent
--- GLOBALS: GetCoinTextureString, GetItemInfo, MoneyFrame_Update, IsModifierKeyDown, IsControlKeyDown
+-- GLOBALS: GetCoinTextureString, GetItemInfo, MoneyFrame_Update
 -- GLOBALS: print, format, wipe, select, string, table, math, pairs
 
 local LibGraph = LibStub("LibGraph-2.0")
 local LIC = LibStub("LibItemCrush-1.0")
 
-local graph
 local oneDay = 60*60*24
+local dataPoints, enchantDataPoints = {}, {}
 local function GetHistoryDataPoints(itemID, special)
 	if not itemID or not ns.DB[itemID] then return end
 	local dataHandle = ns.DB[itemID]
@@ -16,8 +16,9 @@ local function GetHistoryDataPoints(itemID, special)
 	local today = ns.GetNormalizedTimeStamp()
 	local price, maxPrice = nil, 1
 
-	local dataPoints = {}
-	local enchantPoints = LIC:IsCrushable(itemID) and {} or nil
+	wipe(dataPoints)
+	wipe(enchantDataPoints)
+	local enchantPoints = LIC:IsCrushable(itemID) and enchantDataPoints or nil
 
 	-- history data
 	for i = AuctionalGDB.dataAge or -6, -1 do
@@ -53,10 +54,33 @@ local function GetHistoryDataPoints(itemID, special)
 		for i, data in pairs(enchantPoints) do
 			enchantPoints[i][2] = enchantPoints[i][2]/maxPrice*20
 		end
-	end
+	end --]]
 
 	return dataPoints, enchantPoints
 end
+
+local graph
+local function GetHistoryTooltip()
+	local tooltip = _G["AuctionalHistoryTip"]
+	if not tooltip then
+		tooltip = CreateFrame("Frame", "AuctionalHistoryTip", UIParent, "TooltipBorderedFrameTemplate")
+		tooltip:SetSize(graph:GetWidth() + 10, graph:GetHeight() + 30)
+		tooltip:Hide()
+
+		local title = tooltip:CreateFontString("AuctionalHistoryTipTitle", "ARTWORK", "GameFontHighlight")
+		title:SetPoint("TOPLEFT", 0, -10)
+		title:SetPoint("TOPRIGHT", 0, -10)
+		title:SetJustifyH("LEFT")
+		title:SetText(PVP_RECORD)
+		tooltip.title = title
+
+		graph:SetParent(tooltip)
+		graph:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 4, -4)
+		tooltip.graph = graph
+	end
+	return tooltip
+end
+
 local aucLineColor = {43/255, 255/255, 88/255, 1}
 local enchLineColor = {224/255, 82/255, 255/255, 1}
 function ns.CreatePricingGraph(tip, itemLink)
@@ -70,8 +94,8 @@ function ns.CreatePricingGraph(tip, itemLink)
 
 	local points, enchantPoints = GetHistoryDataPoints( ns.GetItemLinkData(itemLink) )
 	if points and #points > 1 then
-		if tip.AddLine then
-			tip:AddLine(PVP_RECORD.."\n|T:50:140|t") -- placeholder texture
+		if tip.AddLine then -- currently unused
+			tip:AddLine(string.format("%s\n|T:%s:%s|t", PVP_RECORD, 50, AuctionalGDB.graphWidth or 140)) -- placeholder texture
 			local tipLine = tip:GetName().."TextLeft"..tip:NumLines()
 			graph:ClearAllPoints()
 			graph:SetPoint("BOTTOMLEFT", tipLine, "BOTTOMLEFT", 0, 2)
@@ -79,8 +103,10 @@ function ns.CreatePricingGraph(tip, itemLink)
 			graph:ClearAllPoints()
 			graph:SetPoint("TOPRIGHT", tip, "TOPLEFT", -6, -6)
 		end
+
 		graph:SetParent(tip)
 		graph:AddDataSeries(points, aucLineColor)
+
 		if enchantPoints and #enchantPoints > 1 then
 			graph:AddDataSeries(enchantPoints, enchLineColor)
 		end
@@ -207,7 +233,7 @@ local recipeCrafts = setmetatable({ }, { __mode = "v" })
 local function GetRecipeItem(tip)
 	local tipName, leftText, craftedName = tip:GetName().."TextLeft", nil, nil
 	for i=1, tip:NumLines() do
-		leftText = string.match(_G[tipName..i]:GetText(), "^\n(.*)")
+		leftText = string.match(_G[tipName..i]:GetText() or "", "^\n(.*)")
 		if leftText then
 			craftedName = leftText
 			break
@@ -243,7 +269,8 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 		ns.TooltipAddDisenchantPrice(tip, itemLink)
 	end
 
-	if AuctionalGDB.showGraphFunc() then
+	if AuctionalGDB.showGraphFunc() and not tip:GetName():match("ShoppingTooltip.+") then
+		-- no graphs for shopping tooltips
 		ns.CreatePricingGraph(tip, itemLink)
 	elseif graph then
 		graph:Hide()

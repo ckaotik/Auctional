@@ -29,7 +29,7 @@ local defaultSettings = {
 	-- tooltip settings
 	priceCombineDifference = 50000, -- [TODO] percentages?
 	minCountForAvailable = 0, -- how often must an item be currently available to *not* show its value in red
-	showGraphFunc = IsControlKeyDown,
+	showGraphFunc = IsAltKeyDown,
 	showDetailedDEFunc = IsModifierKeyDown,
 	showDEPriceFunc = function() return true end,
 	showFullStackFunc = IsModifierKeyDown,

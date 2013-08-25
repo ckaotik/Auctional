@@ -9,6 +9,8 @@ local huge = math.huge
 local scan = {}
 ns.scan = scan
 
+scan.history = {} -- TODO
+
 --[[-- SavedVariables Management --]]--
 local function Stash(dataHandle)
 	if not dataHandle.history then
@@ -177,7 +179,7 @@ local function UpdateItem(list, index)
 	-- save all this data!
 	dataHandle.time = time()
 	dataHandle.price = auctionPrice
-	if dataHandle.price < 1 then print("OOOPS!", name, auctionPrice, dataHandle.price) end
+	-- if dataHandle.price < 1 then print("OOOPS!", name, auctionPrice, dataHandle.price) end
 	if not scan.isMultiPage or scan.isFullScan then
 		-- we know all there is to this item, let's update
 		dataHandle.count = (dataHandle.count or 0) + count
@@ -295,6 +297,39 @@ function scan.ScanCompleted(numItems)
 		scan.callback(scan.data)
 		scan.callback = nil
 	end
+
+	local search = currentQueryArgs.name
+	if search and not ns.Find(scan.history, search) then
+		local _, link = GetItemInfo(search)
+		local linkType, linkID
+
+		local numResults = GetNumAuctionItems("list")
+		if not link and numResults > 0 then
+			local firstItem = GetAuctionItemInfo("list", 1)
+			local lastItem  = GetAuctionItemInfo("list", numResults)
+			if firstItem ~= lastItem then
+				-- names differ, is it still a common itemID?
+				_, firstItem = ns.GetLinkData( GetAuctionItemLink("list", 1) )
+				_, lastItem  = ns.GetLinkData( GetAuctionItemLink("list", numResults) )
+
+				if firstItem == lastItem then
+					linkID   = firstItem
+				end
+			else
+				-- names are equal, suppose we searched for this item
+				linkType, linkID = ns.GetLinkData( GetAuctionItemLink("list", 1) )
+				linkID = linkType == "item" and linkID or nil
+			end
+		else
+			linkType, linkID = ns.GetLinkData(link)
+			linkID = linkType == "item" and linkID or nil
+		end
+		search = linkID or search
+		if not ns.Find(scan.history, search) then
+			table.insert(scan.history, search)
+		end
+	end
+
 	scan.HideLoading()
 	scan.loading:SetScript("OnUpdate", nil)
 end
@@ -320,3 +355,109 @@ end, "showspinner")
 ns.RegisterEvent("AUCTION_HOUSE_CLOSED", function()
 	scan.HideLoading()
 end, "hidespinner")
+
+
+-- autocomplete item names
+-- ----------------------------
+-- GLOBALS: AutoCompleteBox, ITEM_QUALITY_COLORS, AUTOCOMPLETE_FLAG_NONE, AUTOCOMPLETE_FLAG_ALL, AUTOCOMPLETE_SIMPLE_REGEX, AUTOCOMPLETE_SIMPLE_FORMAT_REGEX
+-- GLOBALS: GetItemInfo, AutoCompleteEditBox_OnChar, AutoCompleteEditBox_OnTextChanged, AutoCompleteEditBox_OnEnterPressed, AutoCompleteEditBox_OnEscapePressed, AutoCompleteEditBox_OnTabPressed, AutoCompleteEditBox_OnEditFocusLost, AutoComplete_UpdateResults
+-- GLOBALS: strlen, unpack
+local function GetCleanText(text)
+	if not text then return '' end
+	return text:gsub("\124c%x%x%x%x%x%x%x%x", ""):gsub("\124r", ""):gsub(" %(.-%)$", "")
+end
+
+local lastQuery, queryResults = nil, {}
+local function UpdateAutoComplete(parent, text, cursorPosition)
+	if parent == BrowseName and cursorPosition <= strlen(text) then
+		wipe(queryResults)
+		for _, item in pairs(scan.history) do
+			local suggestion, _, quality, iLevel, _, _, _, _, equipSlot = GetItemInfo(item)
+			      suggestion = suggestion or item
+			if suggestion:lower():find('^'..text:lower()) then
+				local index
+				for i, entry in pairs(queryResults) do
+					if entry == suggestion then
+						index = i
+						break
+					end
+				end
+
+				if quality then
+					if equipSlot and equipSlot ~= "" then
+						suggestion = ("%s%s|r (%d %s)"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion, iLevel, _G[equipSlot])
+					else
+						suggestion = ("%s%s|r"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion)
+					end
+				end
+
+				if index then
+					-- sometimes alts are on our flist/guild, color them nicely, too!
+					queryResults[index] = suggestion
+				else
+					table.insert(queryResults, suggestion)
+				end
+			end
+		end
+		-- table.sort(queryResults, SortNames)
+		AutoComplete_UpdateResults(AutoCompleteBox, unpack(queryResults))
+
+		-- also write out the first match
+		local currentText = parent:GetText()
+		if queryResults[1] and currentText ~= lastQuery then
+			lastQuery = currentText
+			local newText = currentText:gsub(parent.autoCompleteRegex or AUTOCOMPLETE_SIMPLE_REGEX,
+				(parent.autoCompleteFormatRegex or AUTOCOMPLETE_SIMPLE_FORMAT_REGEX):format(
+					queryResults[1],
+					currentText:match(parent.autoCompleteRegex or AUTOCOMPLETE_SIMPLE_REGEX)
+				), 1)
+
+			parent:SetText( GetCleanText(newText) )
+			parent:HighlightText(strlen(currentText), strlen(newText))
+			parent:SetCursorPosition(strlen(currentText))
+		end
+	end
+end
+local function CleanAutoCompleteOutput(self)
+	local editBox = self:GetParent().parent
+	if not editBox.addSpaceToAutoComplete then
+		local newText = GetCleanText( editBox:GetText() )
+		editBox:SetText(newText)
+		editBox:SetCursorPosition(strlen(newText))
+	end
+end
+
+ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
+	local editBox = BrowseName
+	editBox.autoCompleteParams = { include = AUTOCOMPLETE_FLAG_NONE, exclude = AUTOCOMPLETE_FLAG_ALL }
+	editBox.addHighlightedText = true
+
+	local original = editBox:GetScript("OnTabPressed")
+	editBox:SetScript("OnTabPressed", function(self)
+		if not AutoCompleteEditBox_OnTabPressed(self) then
+			original(self)
+		end
+	end)
+	-- original = editBox:GetScript("OnEnterPressed")
+	editBox:SetScript("OnEnterPressed", function(self)
+		if not AutoCompleteEditBox_OnEnterPressed(self) then
+			-- original(self)
+			AuctionFrameBrowse_Search()
+			self:ClearFocus()
+		end
+	end)
+	original = editBox:GetScript("OnEscapePressed")
+	editBox:SetScript("OnEscapePressed", function(self)
+		if not AutoCompleteEditBox_OnEscapePressed(self) then
+			original(self)
+		end
+	end)
+	editBox:HookScript("OnEditFocusLost", AutoCompleteEditBox_OnEditFocusLost)
+	editBox:HookScript("OnTextChanged", AutoCompleteEditBox_OnTextChanged)
+	editBox:HookScript("OnChar", AutoCompleteEditBox_OnChar)
+
+	hooksecurefunc('AutoComplete_Update', UpdateAutoComplete)
+	hooksecurefunc('AutoCompleteButton_OnClick', CleanAutoCompleteOutput)
+
+	ns.UnregisterEvent("AUCTION_HOUSE_SHOW", "autocomplete")
+end, "autocomplete")

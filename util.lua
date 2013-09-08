@@ -20,7 +20,7 @@ function ns.ShowTooltip(frame, link, anchor)
 	local linktype, id, data = ns.GetLinkData(link)
 	if not linktype then
 		-- plain text
-		link = link or frame.tiptext
+		link = (type(link) == 'string' or type(link) == 'number') and link or frame.tiptext
 		if not link then return end
 
 		GameTooltip:SetOwner(frame, anchor)
@@ -47,9 +47,22 @@ function ns.HideTooltip()
 end
 
 -- == Item Functions ==
-function ns.GetLinkData(link)
+function ns.GetLinkData(link, anonym)
 	if not link or type(link) ~= "string" then return end
-	local linkType, id, data = link:match("^.-H([^:]+):?([^:]*):?([^|]*)")
+	local linkType, id, data = link:match("(%l+):([^:]*):?([^\124]*)") -- "^.-H([^:]+):?([^:]*):?([^|]*)")
+
+	if anonym then
+		if linkType == 'battlepet' then
+			-- only keep level and quality
+			data = data:gsub('^([^:]-:[^:]).+', '%1')
+		elseif linkType == 'item' then
+			local suffix = data:match('^[^:]-:[^:]-:[^:]-:[^:]-:[^:]-:([^:]-):.+')
+			if suffix then
+				data = '0:0:0:0:0:'..suffix
+			end
+		end
+	end
+
 	return linkType, tonumber(id), data
 end
 
@@ -60,7 +73,7 @@ function ns.GetItemLinkData(link)
 	local special, petLevel
 	if linkType == "battlepet" then
 		itemID = -1 * itemID
-		petLevel, special = strsplit(':', data) -- get pet quality
+		petLevel, special = strsplit(':', data or '') -- get pet quality
 		special = special and tonumber(special) or nil
 		petLevel = petLevel and tonumber(petLevel) or nil
 	else
@@ -72,12 +85,12 @@ end
 
 local battlePet = select(11, GetAuctionItemClasses())
 function ns.GetItemInfo(link)
-	if not link then return end
+	if not link or type(link) ~= "string" then return end
 	local linkType, itemID, data = ns.GetLinkData(link)
 
 	if linkType == "battlepet" then
 		local name, texture, subClass, companionID = C_PetJournal.GetPetInfoBySpeciesID( itemID )
-		local level, quality, health, attack, speed = strsplit(':', data)
+		local level, quality, health, attack, speed = strsplit(':', data or '')
 
 		-- including some static values for battle pets
 		return name, trim(link), tonumber(quality), tonumber(level), 0, battlePet, tonumber(subClass), 1, "", texture, nil, companionID, tonumber(health), tonumber(attack), tonumber(speed)

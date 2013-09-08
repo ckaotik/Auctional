@@ -9,7 +9,7 @@ local huge = math.huge
 local scan = {}
 ns.scan = scan
 
-scan.history = {} -- TODO
+scan.history = {}
 
 --[[-- SavedVariables Management --]]--
 local function Stash(dataHandle)
@@ -300,31 +300,42 @@ function scan.ScanCompleted(numItems)
 
 	local search = currentQueryArgs.name
 	if search and not ns.Find(scan.history, search) then
-		local _, link = GetItemInfo(search)
-		local linkType, linkID
+		local _, link = ns.GetItemInfo(search)
+		local firstItemName = GetAuctionItemInfo("list", 1)
 
 		local numResults = GetNumAuctionItems("list")
 		if not link and numResults > 0 then
-			local firstItem = GetAuctionItemInfo("list", 1)
-			local lastItem  = GetAuctionItemInfo("list", numResults)
-			if firstItem ~= lastItem then
-				-- names differ, is it still a common itemID?
-				_, firstItem = ns.GetLinkData( GetAuctionItemLink("list", 1) )
-				_, lastItem  = ns.GetLinkData( GetAuctionItemLink("list", numResults) )
+			link = GetAuctionItemLink("list", 1)
 
-				if firstItem == lastItem then
-					linkID   = firstItem
+			--local lastItem  = GetAuctionItemInfo("list", numResults)
+			--if firstItemName ~= lastItem then
+				-- names differ, is it still a common itemID?
+				local firstType, firstItemID = ns.GetLinkData(link, true)
+				local lastType, lastItemID  = ns.GetLinkData( GetAuctionItemLink("list", numResults), true )
+
+				if firstType ~= lastType or firstItemID ~= lastItemID then
+					link = nil
 				end
-			else
-				-- names are equal, suppose we searched for this item
-				linkType, linkID = ns.GetLinkData( GetAuctionItemLink("list", 1) )
-				linkID = linkType == "item" and linkID or nil
-			end
-		else
-			linkType, linkID = ns.GetLinkData(link)
-			linkID = linkType == "item" and linkID or nil
+			--end
 		end
-		search = linkID or search
+
+		-- FIXME: 'Schattenfeuerhalskette' name used for rare & uncommon quality
+		if link then
+			local linkType, linkID, linkData = ns.GetLinkData(link, true)
+			linkID = linkType and linkType..':'..linkID..':'..linkData
+			if linkID and ns.GetItemInfo(linkID) ~= firstItemName then
+				-- searched for a suffixed item, store the item link anyways but keep the original query, too
+				-- 'Schattenfeuerhalskette der Schaumkrone' saves 'item:Schattenfeuerhalskette' + query
+				if not ns.Find(scan.history, linkID) then
+					table.insert(scan.history, linkID)
+				end
+				linkID = search
+			end
+			search = linkID
+		else
+			search = search
+		end
+
 		if not ns.Find(scan.history, search) then
 			table.insert(scan.history, search)
 		end
@@ -364,17 +375,35 @@ end, "hidespinner")
 -- GLOBALS: strlen, unpack
 local function GetCleanText(text)
 	if not text then return '' end
-	return text:gsub("\124c%x%x%x%x%x%x%x%x", ""):gsub("\124r", ""):gsub(" %(.-%)$", "")
+	-- remove |cCOLOR|r, |TTEXTURE|t and appended info
+	text = text:gsub("\124c........", ""):gsub("\124r", ""):gsub("\124T[^\124]-\124t ", ""):gsub(" %(.-%)$", "") -- :trim()
+	return text
 end
+
+local AIC_BATTLEPET = select(11, GetAuctionItemClasses())
 
 local lastQuery, queryResults = nil, {}
 local function UpdateAutoComplete(parent, text, cursorPosition)
 	if parent == BrowseName and cursorPosition <= strlen(text) then
 		wipe(queryResults)
+		-- TODO: sort inverse so we can get 'last searched' entries
 		for _, item in pairs(scan.history) do
-			local suggestion, _, quality, iLevel, _, _, _, _, equipSlot = GetItemInfo(item)
+			local suggestion, _, quality, iLevel, _, class, subClass, _, equipSlot = ns.GetItemInfo(item)
 			      suggestion = suggestion or item
-			if suggestion:lower():find('^'..text:lower()) then
+
+			-- TODO: allow searching for type, level, slot, ...
+			if strtrim(text) == '' or suggestion:lower():find('^'..text:lower()) then
+				if quality then
+					if equipSlot and equipSlot ~= "" then
+						suggestion = ("%s%s|r (%d %s)"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion, iLevel, _G[equipSlot])
+					elseif class == AIC_BATTLEPET then
+						local icon = "Interface\\PetBattles\\PetIcon-"..PET_TYPE_SUFFIX[subClass]
+						suggestion = ("|T%s:%s|t %s%s|r"):format(icon, '0:0:0:0:128:256:63:102:129:168', ITEM_QUALITY_COLORS[quality].hex, suggestion)
+					else
+						suggestion = ("%s%s|r"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion)
+					end
+				end
+
 				local index
 				for i, entry in pairs(queryResults) do
 					if entry == suggestion then
@@ -382,17 +411,7 @@ local function UpdateAutoComplete(parent, text, cursorPosition)
 						break
 					end
 				end
-
-				if quality then
-					if equipSlot and equipSlot ~= "" then
-						suggestion = ("%s%s|r (%d %s)"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion, iLevel, _G[equipSlot])
-					else
-						suggestion = ("%s%s|r"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion)
-					end
-				end
-
 				if index then
-					-- sometimes alts are on our flist/guild, color them nicely, too!
 					queryResults[index] = suggestion
 				else
 					table.insert(queryResults, suggestion)
@@ -421,7 +440,7 @@ end
 local function CleanAutoCompleteOutput(self)
 	local editBox = self:GetParent().parent
 	if not editBox.addSpaceToAutoComplete then
-		local newText = GetCleanText( editBox:GetText() )
+		local newText = GetCleanText( self:GetText() )
 		editBox:SetText(newText)
 		editBox:SetCursorPosition(strlen(newText))
 	end
@@ -431,6 +450,7 @@ ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	local editBox = BrowseName
 	editBox.autoCompleteParams = { include = AUTOCOMPLETE_FLAG_NONE, exclude = AUTOCOMPLETE_FLAG_ALL }
 	editBox.addHighlightedText = true
+	editBox.tiptext = 'Enter space to see a list of recent searched.'
 
 	local original = editBox:GetScript("OnTabPressed")
 	editBox:SetScript("OnTabPressed", function(self)
@@ -455,6 +475,8 @@ ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	editBox:HookScript("OnEditFocusLost", AutoCompleteEditBox_OnEditFocusLost)
 	editBox:HookScript("OnTextChanged", AutoCompleteEditBox_OnTextChanged)
 	editBox:HookScript("OnChar", AutoCompleteEditBox_OnChar)
+	editBox:HookScript("OnEnter", ns.ShowTooltip)
+	editBox:HookScript("OnLeave", ns.HideTooltip)
 
 	hooksecurefunc('AutoComplete_Update', UpdateAutoComplete)
 	hooksecurefunc('AutoCompleteButton_OnClick', CleanAutoCompleteOutput)

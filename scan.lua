@@ -372,7 +372,7 @@ end, "hidespinner")
 -- ----------------------------
 -- GLOBALS: AutoCompleteBox, ITEM_QUALITY_COLORS, AUTOCOMPLETE_FLAG_NONE, AUTOCOMPLETE_FLAG_ALL, AUTOCOMPLETE_SIMPLE_REGEX, AUTOCOMPLETE_SIMPLE_FORMAT_REGEX
 -- GLOBALS: GetItemInfo, AutoCompleteEditBox_OnChar, AutoCompleteEditBox_OnTextChanged, AutoCompleteEditBox_OnEnterPressed, AutoCompleteEditBox_OnEscapePressed, AutoCompleteEditBox_OnTabPressed, AutoCompleteEditBox_OnEditFocusLost, AutoComplete_UpdateResults
--- GLOBALS: strlen, unpack
+-- GLOBALS: strlen
 local function GetCleanText(text)
 	if not text then return '' end
 	-- remove |cCOLOR|r, |TTEXTURE|t and appended info
@@ -419,7 +419,7 @@ local function UpdateAutoComplete(parent, text, cursorPosition)
 			end
 		end
 		-- table.sort(queryResults, SortNames)
-		AutoComplete_UpdateResults(AutoCompleteBox, unpack(queryResults))
+		AutoComplete_UpdateResults(AutoCompleteBox, queryResults)
 
 		-- also write out the first match
 		local currentText = parent:GetText()

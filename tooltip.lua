@@ -187,6 +187,7 @@ function ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
 	auctionLabel = auctionLabel or AUCTIONS
 
 	ns.AnyTooltipSetAuctionPrice(tip, auctionLabel, auctionText)
+	return true
 end
 
 local deDetails = setmetatable({ }, { __mode = "v" })
@@ -264,8 +265,8 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	-- add all of these together, so they can cuddle each other
 	-- no need to add these for battle pets, as they can neither be vendored nor disenchanted
 	ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
-	ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
-	if AuctionalGDB.showDEPriceFunc() then
+	local hasAuctionValue = ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
+	if AuctionalGDB.showDEPriceFunc() and (hasAuctionValue or LIC:CanDisenchantItem(itemLink)) then
 		ns.TooltipAddDisenchantPrice(tip, itemLink)
 	end
 

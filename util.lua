@@ -47,11 +47,11 @@ function ns.HideTooltip()
 end
 
 -- == Item Functions ==
-function ns.GetLinkData(link, anonym)
+function ns.GetLinkData(link, anonymous)
 	if not link or type(link) ~= "string" then return end
 	local linkType, id, data = link:match("(%l+):([^:]*):?([^\124]*)") -- "^.-H([^:]+):?([^:]*):?([^|]*)")
 
-	if anonym then
+	if anonymous then
 		if linkType == 'battlepet' then
 			-- only keep level and quality
 			data = data:gsub('^([^:]-:[^:]).+', '%1')

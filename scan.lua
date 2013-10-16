@@ -141,7 +141,7 @@ local statistics, currentQueryArgs = {}, {}
 scan.data = {}
 
 local function UpdateItem(list, index)
-	local name, texture, count, quality, canUse, level, levelColHeader, minBid, minIncrement, buyoutPrice, bidAmount, highBidder, owner, saleStatus, _, hasAllInfo = GetAuctionItemInfo(list, index)
+	local name, texture, count, quality, canUse, level, levelColHeader, minBid, minIncrement, buyoutPrice, bidAmount, highBidder, bidderFullName, owner, ownerFullName, saleStatus, itemId, hasAllInfo = GetAuctionItemInfo(list, index)
 	local itemLink = GetAuctionItemLink(list, index)
 	local itemID, special, petLevel = ns.GetItemLinkData(itemLink) -- this actually overrides battle pet containers' ids
 

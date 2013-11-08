@@ -1,7 +1,7 @@
 local addonName, ns, _ = ...
 
--- GLOBALS: AuctionalGDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, UIParent
--- GLOBALS: GetCoinTextureString, GetItemInfo, MoneyFrame_Update
+-- GLOBALS: AuctionalGDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, PVP_RECORD, UIParent
+-- GLOBALS: CreateFrame, GetCoinTextureString, GetItemInfo, MoneyFrame_Update
 -- GLOBALS: print, format, wipe, select, string, table, math, pairs
 
 local LibGraph = LibStub("LibGraph-2.0")

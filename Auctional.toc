@@ -6,15 +6,16 @@
 ## Notes: Integrated auction handling
 
 ## RequiredDeps: Blizzard_AuctionUI
-## OptionalDeps:
+# hook tooltips after these addons
+## OptionalDeps: Twinkle
 ## SavedVariables: AuctionalGDB
 ## SavedVariablesPerCharacter:
 
 # X-Website:
 ## X-Category: Auction
 
-# libraries
 #@no-lib-strip@
+# libraries
 LibStub\LibStub.lua
 LibGraph-2.0\LibGraph-2.0.lua
 LibItemCrush-1.0\LibItemCrush-1.0.lua

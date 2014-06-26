@@ -382,9 +382,11 @@ end
 
 local AIC_BATTLEPET = select(11, GetAuctionItemClasses())
 
+-- [[
 local lastQuery, queryResults = nil, {}
 local function UpdateAutoComplete(parent, text, cursorPosition)
-	if parent == BrowseName and cursorPosition <= strlen(text) then
+	if cursorPosition > strlen(text) or text == '' then return end
+	if parent == BrowseName then
 		wipe(queryResults)
 		-- TODO: sort inverse so we can get 'last searched' entries
 		for _, item in pairs(scan.history) do
@@ -406,16 +408,19 @@ local function UpdateAutoComplete(parent, text, cursorPosition)
 
 				local index
 				for i, entry in pairs(queryResults) do
-					if entry == suggestion then
+					if entry.name == suggestion then
 						index = i
 						break
 					end
 				end
-				if index then
-					queryResults[index] = suggestion
-				else
-					table.insert(queryResults, suggestion)
+
+				if not index then
+					index = #queryResults + 1
+					queryResults[index] = {}
 				end
+
+				queryResults[index].name = suggestion
+				queryResults[index].priority = LE_AUTOCOMPLETE_PRIORITY_OTHER
 			end
 		end
 		-- table.sort(queryResults, SortNames)
@@ -427,7 +432,7 @@ local function UpdateAutoComplete(parent, text, cursorPosition)
 			lastQuery = currentText
 			local newText = currentText:gsub(parent.autoCompleteRegex or AUTOCOMPLETE_SIMPLE_REGEX,
 				(parent.autoCompleteFormatRegex or AUTOCOMPLETE_SIMPLE_FORMAT_REGEX):format(
-					queryResults[1],
+					GetCleanText(queryResults[1].name),
 					currentText:match(parent.autoCompleteRegex or AUTOCOMPLETE_SIMPLE_REGEX)
 				), 1)
 
@@ -437,7 +442,7 @@ local function UpdateAutoComplete(parent, text, cursorPosition)
 		end
 	end
 end
-local function CleanAutoCompleteOutput(self)
+local function CleanAutoCompleteOutput(self, ...)
 	local editBox = self:GetParent().parent
 	if not editBox.addSpaceToAutoComplete then
 		local newText = GetCleanText( self:GetText() )
@@ -445,12 +450,14 @@ local function CleanAutoCompleteOutput(self)
 		editBox:SetCursorPosition(strlen(newText))
 	end
 end
+--]]
 
 ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	local editBox = BrowseName
 	editBox.autoCompleteParams = { include = AUTOCOMPLETE_FLAG_NONE, exclude = AUTOCOMPLETE_FLAG_ALL }
 	editBox.addHighlightedText = true
-	editBox.tiptext = 'Enter space to see a list of recent searched.'
+	editBox.autoCompleteContext = 'none'
+	editBox.tiptext = 'Enter space to see a list of recent searches.'
 
 	local original = editBox:GetScript("OnTabPressed")
 	editBox:SetScript("OnTabPressed", function(self)
@@ -479,7 +486,11 @@ ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	editBox:HookScript("OnLeave", ns.HideTooltip)
 
 	hooksecurefunc('AutoComplete_Update', UpdateAutoComplete)
-	hooksecurefunc('AutoCompleteButton_OnClick', CleanAutoCompleteOutput)
+	for i = 1, AUTOCOMPLETE_MAX_BUTTONS do
+		_G["AutoCompleteButton"..i]:HookScript('OnClick', CleanAutoCompleteOutput)
+	end
 
 	ns.UnregisterEvent("AUCTION_HOUSE_SHOW", "autocomplete")
 end, "autocomplete")
+
+-- TODO: FIXME: current bug when selecting battle pets via keyboard nothing gets added

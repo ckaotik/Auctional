@@ -25,7 +25,7 @@ LibItemCrush-1.0\LibItemCrush-1.0.lua
 
 # main files
 util.lua
-core.lua
+Auctional.lua
 columns.lua
 sort.lua
 scan.lua

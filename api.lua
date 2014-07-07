@@ -125,7 +125,7 @@ function ns:GetAuctionBuyout(item, when)
 		myPrice = ns:GetAuctionValue(item, nil, when)
 	elseif type(item) == "table" then
 		myPrice = ns:GetAuctionValue(item.itemID or item.itemid or item.itemId or item.id, nil, when)
-	else
+	elseif item then
 		_, item = GetItemInfo(item)
 		local item, special, battlePetLevel = ns.GetItemLinkData( item )
 		myPrice = ns:GetAuctionValue(item, special, when, battlePetLevel)

@@ -1,3 +1,5 @@
+if true then return end
+
 local _, ns = ...
 -- GLOBALS: _G, AuctionalGDB, AuctionSort, NAME, AuctionFrameBrowse, BrowseBuyoutSort, BrowseQualitySort, BrowseNameSort, BrowseQuantitySort
 -- GLOBALS: CreateFrame, hooksecurefunc, AuctionFrame_OnClickSortColumn, SortButton_UpdateArrow

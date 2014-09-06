@@ -1,6 +1,31 @@
 local addonName, ns, _ = ...
 Auctional = ns
 
+--[[
+Auctional
+- scan handlers
+- tooltip
+	- GetAuctionBuyout API
+	- tooltip hooks
+		- show stack/show single/show graph
+	- history graph
+
+AuctionalUI
+- general
+	- scan button w/ cooldown timer
+	- reposition search button
+	- swap bids/auctions tabs
+- sell
+	- alt-click to sell item
+	- show competition (use GnomishAuctionShrinker style)
+		- browse frame sidebar overlay?
+	- cancel own auctions
+	- buy competition
+
+use AceAddon
+create libs\ folder
+--]]
+
 -- GLOBALS: Auctional, AuctionalGDB, AuctionFrameTab2, AuctionFrameTab3
 -- GLOBALS: GetRealmName, UnitFactionGroup, GetAuctionBuyout, GetItemInfo, GetDisenchantValue
 -- GLOBALS: assert, string, pairs, type, wipe, tonnumber

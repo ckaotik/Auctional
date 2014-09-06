@@ -1,3 +1,5 @@
+if true then return end
+
 local _, ns = ...
 -- GLOBALS: _G, AuctionalGDB, BUYOUT_COST, YOUR_BID, NUM_BROWSE_TO_DISPLAY, AUCTION_PRICE_PER_ITEM, AUCTIONS_BUTTON_HEIGHT, BrowseScrollFrame, AuctionFrameBrowse, GameFontHighlightSmall, ShowOnPlayerCheckButton, AuctionFrameBrowse_Update, AuctionFrame, BidScrollFrame, AuctionsScrollFrame
 -- GLOBALS: hooksecurefunc, CreateFrame, MoneyFrame_Update, MoneyFrame_SetType, MoneyFrame_SetMaxDisplayWidth, FauxScrollFrame_GetOffset, GetAuctionItemInfo, GetAuctionItemTimeLeft, GetCoinTextureString, PlaySound, GetSelectedAuctionItem

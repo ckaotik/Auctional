@@ -1,3 +1,97 @@
+local addonName, addon = ...
+if true then return end
+
+local function CreateOverlay()
+	local overlay = CreateFrame('Frame', 'AuctionalAuctionOverlay', AuctionFrameBrowse)
+	      overlay:SetSize(165, 308)
+	      overlay:SetPoint('TOPLEFT', 17, -101)
+	      overlay:SetFrameStrata('HIGH')
+
+	local top = overlay:CreateTexture(nil, 'BACKGROUND')
+	      top:SetTexture('Interface\\AuctionFrame\\UI-AuctionFrame-Browse-TopLeft')
+	      top:SetTexCoord(17/256, 182/256, 101/256, 256/256)
+	      top:SetPoint('TOPLEFT')
+	      top:SetSize(182-17, 256-101)
+	local bottom = overlay:CreateTexture(nil, 'BACKGROUND')
+	      bottom:SetTexture('Interface\\AuctionFrame\\UI-AuctionFrame-Browse-BotLeft')
+	      bottom:SetTexCoord(17/256, 182/256, 0/256, 153/256)
+	      bottom:SetSize(182-17, 153-0)
+	      bottom:SetPoint('BOTTOMRIGHT')
+
+	-- http://www.townlong-yak.com/framexml/18291/Blizzard_AuctionUI/Blizzard_AuctionUI.xml#1410
+	-- PopupButtonTemplate
+	local button = CreateFrame('Button', '$parentItemButton', overlay, 'ItemButtonTemplate', index)
+	      button:SetPoint('TOPLEFT', 8, -6)
+	      -- button:SetScale(0.75)
+	local function SyncAuctionItemButton(self, btn, up)
+		AuctionSellItemButton_OnClick(_G.AuctionsItemButton, btn, up)
+
+		local name, texture, count, quality, canUse, pricePerStack, pricePerItem, maxStack, invCount = GetAuctionSellItemInfo()
+		SetItemButtonTexture(self, texture)
+		SetItemButtonCount(self, count)
+		SetItemButtonStock(self, invCount)
+	end
+	button:SetScript('OnClick', SyncAuctionItemButton)
+	button:SetScript('OnDragStart', SyncAuctionItemButton)
+	button:SetScript('OnReceiveDrag', SyncAuctionItemButton)
+	button:SetScript('OnEnter', _G.AuctionsItemButton:GetScript('OnEnter'))
+	button:SetScript('OnLeave', GameTooltip_Hide)
+
+	-- AuctionsItemButton:SetParent(overlay)
+	-- AuctionsItemButton:ClearAllPoints()
+	-- AuctionsItemButton:SetPoint('TOPLEFT', 6, -6)
+	-- local name, texture =AuctionsItemButton:GetRegions()
+	-- texture:SetWidth(158)
+end
+CreateOverlay()
+
+local function CreateAuction()
+	-- AuctionsCreateAuctionButton:Disable()
+	-- AuctionsBuyoutText:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+	-- AuctionsBuyoutError:Hide()
+
+	if not GetAuctionSellItemInfo() then
+		-- no item selected
+		return
+	end
+
+	local stackSize   = AuctionsStackSizeEntry:GetNumber()
+	local numAuctions = AuctionsNumStacksEntry:GetNumber()
+
+	local startPrice  = MoneyInputFrame_GetCopper(StartPrice)
+	local buyoutPrice = MoneyInputFrame_GetCopper(BuyoutPrice)
+	if buyoutPrice < startPrice then
+		-- buyout must be more than bid price
+		-- AuctionsBuyoutText:SetTextColor(RED_FONT_COLOR.r, RED_FONT_COLOR.g, RED_FONT_COLOR.b)
+		-- AuctionsBuyoutError:Show()
+		return
+	elseif startPrice < 1 or startPrice > MAXIMUM_BID_PRICE then
+		-- invalid start price
+		return
+	end
+
+	local stackCount = AuctionsItemButton.stackCount or 0
+	local totalCount = AuctionsItemButton.totalCount or 0
+	if stackSize == 0 or stackSize > stackCount or numAuctions == 0 or stackSize * numAuctions > totalCount then
+		-- trying to sell more than we own
+		return
+	end
+
+	LAST_ITEM_START_BID, LAST_ITEM_BUYOUT = startPrice, buyoutPrice
+	if AuctionFrameAuctions.priceType == PRICE_TYPE_UNIT then
+		startPrice  = startPrice  * stackSize
+		buyoutPrice = buyoutPrice * stackSize
+	end
+
+	-- AuctionsCreateAuctionButton:Enable()
+	DropCursorMoney()
+	PlaySound('LOOTWINDOWCOINSOUND')
+	print('StartAuction', startPrice, buyoutPrice, AuctionFrameAuctions.duration, stackSize, numAuctions)
+	-- StartAuction(startPrice, buyoutPrice, AuctionFrameAuctions.duration, stackSize, numAuctions)
+end
+
+if true then return end
+
 local _, ns = ...
 -- GLOBALS: _G, AuctionalGDB, AuctionFrame, AuctionFrameAuctions, AuctionFrameTab3, AuctionsScrollFrame, GameTooltip, PriceDropDown, BuyoutPrice, StartPrice, AuctionsNumStacksEntry, AuctionsStackSizeEntry, AuctionsNumStacksMaxButton, AuctionsStackSizeMaxButton, AuctionsCancelAuctionButton, AuctionsBidSort, AuctionsHighBidderSort, AuctionsDurationSort
 -- GLOBALS: ITEM_QUALITY_COLORS, FONT_COLOR_CODE_CLOSE, RED_FONT_COLOR_CODE, UNKNOWN, NUM_AUCTIONS_TO_DISPLAY, BUYOUT, CANCEL_AUCTION, AUCTION_CANCEL_COST, AUCTIONS_BUTTON_HEIGHT, LEVEL, AUCTION_CREATOR, CLOSES_IN, HIGH_BIDDER, CURRENT_BID, BUYOUT_PRICE

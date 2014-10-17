@@ -1,6 +1,6 @@
 local addonName, ns, _ = ...
 
--- GLOBALS: AuctionalGDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, PVP_RECORD, UIParent
+-- GLOBALS: AuctionalDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, PVP_RECORD, UIParent
 -- GLOBALS: CreateFrame, GetCoinTextureString, GetItemInfo, MoneyFrame_Update
 -- GLOBALS: print, format, wipe, select, string, table, math, pairs
 
@@ -21,7 +21,7 @@ local function GetHistoryDataPoints(itemID, special)
 	local enchantPoints = LIC:IsCrushable(itemID) and enchantDataPoints or nil
 
 	-- history data
-	for i = AuctionalGDB.dataAge or -6, -1 do
+	for i = AuctionalDB.dataAge or -6, -1 do
 		price = ns:GetAuctionValue(itemID, special, today+i*oneDay)
 		if price then
 			if price > maxPrice then maxPrice = price end
@@ -85,7 +85,7 @@ local aucLineColor = {43/255, 255/255, 88/255, 1}
 local enchLineColor = {224/255, 82/255, 255/255, 1}
 function ns.CreatePricingGraph(tip, itemLink)
 	if not graph then
-		graph = LibGraph:CreateGraphLine(addonName.."PriceHistory", UIParent, "CENTER", "CENTER", 0, 0, AuctionalGDB.graphWidth or 140, 40)
+		graph = LibGraph:CreateGraphLine(addonName.."PriceHistory", UIParent, "CENTER", "CENTER", 0, 0, AuctionalDB.graphWidth or 140, 40)
 		graph:SetYAxis(0, 20)
 		graph:SetGridSpacing(1, 5)
 	else
@@ -95,7 +95,7 @@ function ns.CreatePricingGraph(tip, itemLink)
 	local points, enchantPoints = GetHistoryDataPoints( ns.GetItemLinkData(itemLink) )
 	if points and #points > 1 then
 		if tip.AddLine then -- currently unused
-			tip:AddLine(string.format("%s\n|T:%s:%s|t", PVP_RECORD, 50, AuctionalGDB.graphWidth or 140)) -- placeholder texture
+			tip:AddLine(string.format("%s\n|T:%s:%s|t", PVP_RECORD, 50, AuctionalDB.graphWidth or 140)) -- placeholder texture
 			local tipLine = tip:GetName().."TextLeft"..tip:NumLines()
 			graph:ClearAllPoints()
 			graph:SetPoint("BOTTOMLEFT", tipLine, "BOTTOMLEFT", 0, 2)
@@ -110,7 +110,7 @@ function ns.CreatePricingGraph(tip, itemLink)
 		if enchantPoints and #enchantPoints > 1 then
 			graph:AddDataSeries(enchantPoints, enchLineColor)
 		end
-		graph:SetXAxis(AuctionalGDB.dataAge or -6, 0)
+		graph:SetXAxis(AuctionalDB.dataAge or -6, 0)
 		graph:Show()
 	else
 		graph:Hide()
@@ -168,11 +168,11 @@ function ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
 	itemPrice = itemPrice and (itemPrice * (stackSize or 1)) or nil
 
 	local color = "FFFFFF" -- FFCC00 as yellow
-	if not itemPrice or not currentCount or currentCount <= AuctionalGDB.minCountForAvailable then color = "FF0000" end
+	if not itemPrice or not currentCount or currentCount <= AuctionalDB.minCountForAvailable then color = "FF0000" end
 	if not itemPrice and not previousPrice then return end
 
 	local auctionText
-	if minPrice and maxPrice and math.abs(maxPrice - minPrice) > AuctionalGDB.priceCombineDifference then
+	if minPrice and maxPrice and math.abs(maxPrice - minPrice) > AuctionalDB.priceCombineDifference then
 		-- this uses an ndash, i.e. alt + -
 		auctionText = string.format("%s – %s", GetCoinTextureString(minPrice), GetCoinTextureString(maxPrice))
 	else
@@ -223,7 +223,7 @@ function ns.TooltipAddDisenchantPrice(tip, itemLink)
 		tip:AddDoubleLine(crushType, "|cffFFFFFF"..GetCoinTextureString(dePrice).."|r")
 	end
 	-- even if we don't have prices, disenchant reagents are of interest!
-	if AuctionalGDB.showDetailedDEFunc() then
+	if AuctionalDB.showDetailedDEFunc() then
 		ShowDisenchantDetails(tip, itemLink, "    ")
 	end
 end
@@ -249,7 +249,7 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	if not itemLink then return end
 
 	local itemType, _, stackSize = select(6, GetItemInfo(itemLink))
-	stackSize = (AuctionalGDB.showFullStackFunc() and stackSize and stackSize > 1) and stackSize or nil
+	stackSize = (AuctionalDB.showFullStackFunc() and stackSize and stackSize > 1) and stackSize or nil
 
 	if itemType == RECIPE then
 		if recipeCrafts[itemLink] == nil then recipeCrafts[itemLink] = GetRecipeItem(tip) end
@@ -266,11 +266,11 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	-- no need to add these for battle pets, as they can neither be vendored nor disenchanted
 	ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
 	local hasAuctionValue = ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
-	if AuctionalGDB.showDEPriceFunc() and (hasAuctionValue or LIC:CanDisenchantItem(itemLink)) then
+	if AuctionalDB.showDEPriceFunc() and (hasAuctionValue or LIC:CanDisenchantItem(itemLink)) then
 		ns.TooltipAddDisenchantPrice(tip, itemLink)
 	end
 
-	if AuctionalGDB.showGraphFunc() and not tip:GetName():match("ShoppingTooltip.+") then
+	if AuctionalDB.showGraphFunc() and not tip:GetName():match("ShoppingTooltip.+") then
 		-- no graphs for shopping tooltips
 		ns.CreatePricingGraph(tip, itemLink)
 	elseif graph then
@@ -296,14 +296,13 @@ GameTooltip:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ItemRefTooltip:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ShoppingTooltip1:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ShoppingTooltip2:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
-ShoppingTooltip3:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 
 hooksecurefunc("BattlePetTooltipTemplate_SetBattlePet", function(tip, data)
 	local link = format("%s\124Hbattlepet:%d:%d:%d:%d:%d:%d:%d\124h[%s]\124h\124r", ITEM_QUALITY_COLORS[data.breedQuality].hex, data.speciesID, data.level, data.breedQuality, data.maxHealth, data.power, data.speed, data.name, data.name)
 
 	ns.TooltipAddAuctionPrice(tip, link)
 
-	if AuctionalGDB.showGraphFunc() then
+	if AuctionalDB.showGraphFunc() then
 		ns.CreatePricingGraph(tip, link)
 	elseif graph then
 		graph:Hide()

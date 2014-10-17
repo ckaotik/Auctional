@@ -1,7 +1,7 @@
 if true then return end
 
 local _, ns = ...
--- GLOBALS: _G, AuctionalGDB, BUYOUT_COST, YOUR_BID, NUM_BROWSE_TO_DISPLAY, AUCTION_PRICE_PER_ITEM, AUCTIONS_BUTTON_HEIGHT, BrowseScrollFrame, AuctionFrameBrowse, GameFontHighlightSmall, ShowOnPlayerCheckButton, AuctionFrameBrowse_Update, AuctionFrame, BidScrollFrame, AuctionsScrollFrame
+-- GLOBALS: _G, AuctionalDB, BUYOUT_COST, YOUR_BID, NUM_BROWSE_TO_DISPLAY, AUCTION_PRICE_PER_ITEM, AUCTIONS_BUTTON_HEIGHT, BrowseScrollFrame, AuctionFrameBrowse, GameFontHighlightSmall, ShowOnPlayerCheckButton, AuctionFrameBrowse_Update, AuctionFrame, BidScrollFrame, AuctionsScrollFrame
 -- GLOBALS: hooksecurefunc, CreateFrame, MoneyFrame_Update, MoneyFrame_SetType, MoneyFrame_SetMaxDisplayWidth, FauxScrollFrame_GetOffset, GetAuctionItemInfo, GetAuctionItemTimeLeft, GetCoinTextureString, PlaySound, GetSelectedAuctionItem
 -- GLOBALS: ipairs, floor, math
 
@@ -159,7 +159,7 @@ local function UpdateAuctionEntry()
 		-- needs to be after first positioning
 		moneyFrame:ClearAllPoints()
 		moneyFrame:SetPoint("TOPRIGHT", moneyFrameAnchor, "TOPRIGHT", padding+moneyWidth, -3) -- justify right
-		if AuctionalGDB.perItemPrice then
+		if AuctionalDB.perItemPrice then
 			MoneyFrame_Update(moneyFrame:GetName(), floor((bidAmount ~= 0 and bidAmount or minBid)/count))
 			MoneyFrame_Update(buyoutMoneyFrame:GetName(), floor(buyoutPrice/count))
 		end
@@ -170,7 +170,7 @@ local function UpdateAuctionEntry()
 		--[[== showing / hiding stuff ==]]--
 		local mine, you, yours, dx, dy = moneyFrame:GetPoint()
 		local mine2, you2, yours2, dx2, dy2 = seller:GetPoint()
-		if not AuctionalGDB.showBothWhenEqual and math.abs(buyoutPrice - minBid) <= AuctionalGDB.maxPriceDiffForEqual then
+		if not AuctionalDB.showBothWhenEqual and math.abs(buyoutPrice - minBid) <= AuctionalDB.maxPriceDiffForEqual then
 			-- both prices available, but almost equal. show only buyout
 			moneyFrame:Hide()
 			moneyFrame:SetPoint(mine, you, yours, dx, 4)
@@ -187,14 +187,14 @@ local function UpdateAuctionEntry()
 			seller:SetPoint(mine2, you2, yours2, dx2, 10)
 		end
 
-		if level <= 1 and not AuctionalGDB.showLevelOne then
+		if level <= 1 and not AuctionalDB.showLevelOne then
 			_G[buttonName.."Level"]:Hide()
 		else
 			_G[buttonName.."Level"]:Show()
 		end
 
 		local itemCount = _G[buttonName.."ItemCount"]
-		if count == 1 and AuctionalGDB.showSingleItemCount then
+		if count == 1 and AuctionalDB.showSingleItemCount then
 			itemCount:SetText(count)
 			itemCount:Show()
 		end
@@ -205,12 +205,12 @@ ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	local showPerItemPrices = CreateFrame("CheckButton", "Auctional_ShowPerItemPrice", AuctionFrameBrowse, "UICheckButtonTemplate")
 	showPerItemPrices:SetWidth(26); showPerItemPrices:SetHeight(26)
 	showPerItemPrices:SetPoint("LEFT", ShowOnPlayerCheckButton, "RIGHT", 70, 0)
-	showPerItemPrices:SetChecked(AuctionalGDB.perItemPrice)
+	showPerItemPrices:SetChecked(AuctionalDB.perItemPrice)
 	showPerItemPrices.text:SetFontObject(GameFontHighlightSmall)
 	showPerItemPrices.text:SetText(AUCTION_PRICE_PER_ITEM)
 	showPerItemPrices:SetScript("OnClick", function(self)
 		PlaySound(self:GetChecked() and "igMainMenuOptionCheckBoxOn" or "igMainMenuOptionCheckBoxOff")
-		AuctionalGDB.perItemPrice = self:GetChecked()
+		AuctionalDB.perItemPrice = self:GetChecked()
 		AuctionFrameBrowse_Update()
 	end)
 	ns.showPerItemPrices = showPerItemPrices

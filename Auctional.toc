@@ -5,10 +5,10 @@
 ## Title: Auctional
 ## Notes: Integrated auction handling
 
-## RequiredDeps: Blizzard_AuctionUI
+# RequiredDeps: Blizzard_AuctionUI
 # hook tooltips after these addons
-## OptionalDeps: Twinkle
-## SavedVariables: AuctionalGDB
+# OptionalDeps: Twinkle
+## SavedVariables: AuctionalDB
 ## SavedVariablesPerCharacter:
 
 # X-Website:

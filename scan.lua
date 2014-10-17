@@ -1,5 +1,5 @@
 local _, ns = ...
--- GLOBALS: _G, AuctionalGDB, AuctionFrame, AuctionFrameBrowse, BrowseName
+-- GLOBALS: _G, AuctionalDB, AuctionFrame, AuctionFrameBrowse, BrowseName
 -- GLOBALS: CreateFrame, hooksecurefunc, GetAuctionItemInfo, GetAuctionItemLink, CanSendAuctionQuery, QueryAuctionItems, GetNumAuctionItems, NUM_AUCTION_ITEMS_PER_PAGE, AuctionFrameFilter_OnClick
 -- GLOBALS: time, type, pairs, date, strsplit, select, wipe, table
 local floor = math.floor
@@ -117,7 +117,7 @@ local function InitScanningStatus()
 end
 local function InitScanButton()
 	local button = CreateFrame("Button", nil, AuctionFrameBrowse, "UIPanelButtonTemplate")
-	button:SetPoint("TOPRIGHT", AuctionFrameBrowse, "TOPRIGHT", 70, -35)
+	button:SetPoint("TOPRIGHT", AuctionFrameBrowse, "TOPRIGHT", 40, -12) -- 70, -35
 	button:SetScript("OnUpdate", function(self)
 		local canScan, canFullScan = CanSendAuctionQuery()
 		if canScan and canFullScan then
@@ -152,7 +152,7 @@ local function UpdateItem(list, index)
 			StashPreviousData(itemID)
 		end
 		table.insert(scan.data[itemID], {itemLink, count, minBid, buyoutPrice, highBidder, owner})
-	elseif not quality or quality < AuctionalGDB.minQuality then
+	elseif not quality or quality < AuctionalDB.minQuality then
 		-- skip low quality items, but still enable explicit scans of these
 		statistics['invalid'] = (statistics['invalid'] or 0) + 1
 		return
@@ -168,7 +168,7 @@ local function UpdateItem(list, index)
 
 	local auctionPrice = min(
 		buyoutPrice > 0 and buyoutPrice/count or huge,
-		(buyoutPrice == 0 and minBid > 0) and minBid/count*AuctionalGDB.bidOnlyFactor or huge,
+		(buyoutPrice == 0 and minBid > 0) and minBid/count*AuctionalDB.bidOnlyFactor or huge,
 		dataHandle.price or huge
 	)
 	-- skip weird entries ...
@@ -194,14 +194,14 @@ local function UpdateItem(list, index)
 	return hasAllInfo
 end
 local function UpdateDataBatch()
-	for i=1, AuctionalGDB.actionsPerFrame do
+	for i=1, AuctionalDB.actionsPerFrame do
 		if lastScanIndex + i > batchSize then
 			scan.ScanCompleted(batchSize)
 			break
 		end
 		UpdateItem("list", lastScanIndex+i)
 	end
-	lastScanIndex = lastScanIndex + AuctionalGDB.actionsPerFrame
+	lastScanIndex = lastScanIndex + AuctionalDB.actionsPerFrame
 end
 local function HandleScanResults()
 	-- we don't want any interference. listener will be restarted on the next query
@@ -253,7 +253,7 @@ function scan.RequestLiveData(callback, name, quality, itemClass, itemFilter)
 	end
 	-- UIDropDownMenu_SetSelectedValue(BrowseDropDown, quality and tonumber(quality) or -1)
 
-	QueryAuctionItems(name, nil, nil, nil, itemClass, nil, 0, nil, quality)
+	QueryAuctionItems(name, nil, nil, nil, itemClass, nil, 0, nil, quality, false, true)
 end
 
 function scan.ScanStarted(...)
@@ -274,7 +274,9 @@ function scan.ScanStarted(...)
 		currentQueryArgs.itemSubClass,
 		currentQueryArgs.page,
 		currentQueryArgs.isUsable,
-		currentQueryArgs.minQuality = ...
+		currentQueryArgs.minQuality,
+		_, -- full scan
+		currentQueryArgs.exactMatch = ...
 	end
 	scan.ShowLoading(1,0.82,0)
 end
@@ -287,7 +289,7 @@ function scan.ScanCompleted(numItems)
 		scan.loading:SetScript("OnUpdate", function()
 			if CanSendAuctionQuery() then
 				AuctionFrameBrowse.page = currentQueryArgs.page + 1 -- makes the ui show things nicely
-				QueryAuctionItems(currentQueryArgs.name, currentQueryArgs.minLevel, currentQueryArgs.maxLevel, currentQueryArgs.invType, currentQueryArgs.itemClass, currentQueryArgs.itemSubClass, currentQueryArgs.page + 1, currentQueryArgs.isUsable, currentQueryArgs.minQuality)
+				QueryAuctionItems(currentQueryArgs.name, currentQueryArgs.minLevel, currentQueryArgs.maxLevel, currentQueryArgs.invType, currentQueryArgs.itemClass, currentQueryArgs.itemSubClass, currentQueryArgs.page + 1, currentQueryArgs.isUsable, currentQueryArgs.minQuality, false, currentQueryArgs.exactMatch)
 			end
 		end)
 		return
@@ -349,15 +351,16 @@ ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	InitScanningStatus()
 	InitScanButton()
 
-	local reset = _G["BrowseResetButton"]
+	--[[ local reset = _G["BrowseResetButton"]
 	reset:SetText("x")
 	reset:SetWidth(30)
+	reset:ClearAllPoints()
 	reset:SetPoint("TOPLEFT", AuctionFrameBrowse, "TOPLEFT", 44, -75)
 
 	local search = _G["BrowseSearchButton"]
 	search:SetWidth(104)
 	search:ClearAllPoints()
-	search:SetPoint("TOPLEFT", AuctionFrameBrowse, "TOPLEFT", 78, -75)
+	search:SetPoint("TOPLEFT", AuctionFrameBrowse, "TOPLEFT", 78, -75) --]]
 
 	hooksecurefunc("QueryAuctionItems", scan.ScanStarted)
 

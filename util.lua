@@ -1,6 +1,6 @@
 local addonName, ns, _ = ...
 addonName = "|cffFFC240"..addonName.."|r"
--- GLOBALS: AuctionalGDB, GameTooltip, BattlePetTooltip, DEFAULT_CHAT_FRAME, C_PetJournal
+-- GLOBALS: AuctionalDB, GameTooltip, BattlePetTooltip, DEFAULT_CHAT_FRAME, C_PetJournal
 -- GLOBALS: GetItemInfo, GetSpellLink, BattlePetToolTip_Show
 -- GLOBALS: join, pairs, tostringall, setmetatable, getmetatable, strsplit, unpack, tonumber, type, select, format, date, time
 local trim = string.trim
@@ -115,7 +115,7 @@ end
 
 -- prints debug messages only when debug mode is active
 function ns.Debug(...)
-	if AuctionalGDB and AuctionalGDB.debug then
+	if AuctionalDB and AuctionalDB.debug then
 		ns.Print("! "..join(", ", tostringall(...)))
 	end
 end

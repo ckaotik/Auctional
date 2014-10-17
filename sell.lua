@@ -93,7 +93,7 @@ end
 if true then return end
 
 local _, ns = ...
--- GLOBALS: _G, AuctionalGDB, AuctionFrame, AuctionFrameAuctions, AuctionFrameTab3, AuctionsScrollFrame, GameTooltip, PriceDropDown, BuyoutPrice, StartPrice, AuctionsNumStacksEntry, AuctionsStackSizeEntry, AuctionsNumStacksMaxButton, AuctionsStackSizeMaxButton, AuctionsCancelAuctionButton, AuctionsBidSort, AuctionsHighBidderSort, AuctionsDurationSort
+-- GLOBALS: _G, AuctionalDB, AuctionFrame, AuctionFrameAuctions, AuctionFrameTab3, AuctionsScrollFrame, GameTooltip, PriceDropDown, BuyoutPrice, StartPrice, AuctionsNumStacksEntry, AuctionsStackSizeEntry, AuctionsNumStacksMaxButton, AuctionsStackSizeMaxButton, AuctionsCancelAuctionButton, AuctionsBidSort, AuctionsHighBidderSort, AuctionsDurationSort
 -- GLOBALS: ITEM_QUALITY_COLORS, FONT_COLOR_CODE_CLOSE, RED_FONT_COLOR_CODE, UNKNOWN, NUM_AUCTIONS_TO_DISPLAY, BUYOUT, CANCEL_AUCTION, AUCTION_CANCEL_COST, AUCTIONS_BUTTON_HEIGHT, LEVEL, AUCTION_CREATOR, CLOSES_IN, HIGH_BIDDER, CURRENT_BID, BUYOUT_PRICE
 -- GLOBALS: GetAuctionSellItemInfo, ClearCursor, GetCursorInfo, IsAltKeyDown, ClickAuctionSellItemButton, UIDropDownMenu_GetSelectedValue, UIDropDownMenu_SetSelectedValue, MoneyInputFrame_SetCopper, PickupContainerItem, FauxScrollFrame_GetOffset, FauxScrollFrame_Update, FauxScrollFrame_OnVerticalScroll, AuctionFrameBrowse_Update, AuctionFrameAuctions_Update, AuctionFrameMoneyFrame, MoneyFrame_Update, UnitName, CreateFrame, hooksecurefunc, GetCVarBool, DressUpBattlePet, DressUpItemLink, BattlePetToolTip_Show, IsModifiedClick, HandleModifiedItemClick, GetItemInfo
 -- GLOBALS: string, floor, unpack, tablem strsplit, tonumber, wipe, pairs, select, table
@@ -150,8 +150,8 @@ function sell.UpdateSortingHeaders()
 end
 
 function sell.CalculateAuctionPrices(compareValue, count)
-	local startDiscount, startReduction = AuctionalGDB.startPriceDiscount, AuctionalGDB.startPriceReduction
-	local buyoutDiscount, buyoutReduction = AuctionalGDB.buyoutPriceDiscount, AuctionalGDB.buyoutPriceReduction
+	local startDiscount, startReduction = AuctionalDB.startPriceDiscount, AuctionalDB.startPriceReduction
+	local buyoutDiscount, buyoutReduction = AuctionalDB.buyoutPriceDiscount, AuctionalDB.buyoutPriceReduction
 
 	local startPrice = floor((1 - startDiscount)*(compareValue*count)) - startReduction
 	local buyoutPrice = floor((1 - buyoutDiscount)*(compareValue*count)) - buyoutReduction
@@ -238,7 +238,7 @@ ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
 	stackSizeMax:SetWidth(50)
 	stackSizeMax:SetText("Max")
 
-	AuctionFrameAuctions.priceType = AuctionalGDB.priceType or 1
+	AuctionFrameAuctions.priceType = AuctionalDB.priceType or 1
     UIDropDownMenu_SetSelectedValue(PriceDropDown, AuctionFrameAuctions.priceType)
 
     hooksecurefunc("ContainerFrameItemButton_OnModifiedClick", function(self, button, ...)
@@ -394,7 +394,7 @@ function sell.UpdateAuctions()
 			closingTimeFrame = _G[buttonName.."ClosingTime"]
 			closingTimeFrame:EnableMouse(false)
 			closingTimeText = _G[buttonName.."ClosingTimeText"]
-			if level > 1 or AuctionalGDB.showLevelOne then
+			if level > 1 or AuctionalDB.showLevelOne then
 				closingTimeText:Show()
 				closingTimeText:SetText(level)
 			else
@@ -402,7 +402,7 @@ function sell.UpdateAuctions()
 			end
 
 			itemCount = _G[buttonName.."ItemCount"]
-			if count > 1 or AuctionalGDB.showSingleItemCount then
+			if count > 1 or AuctionalDB.showSingleItemCount then
 				itemCount:SetText(count)
 				itemCount:Show()
 			else

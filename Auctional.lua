@@ -24,9 +24,14 @@ AuctionalUI
 
 use AceAddon
 create libs\ folder
+
+Changes in WoD: http://wowpedia.org/Patch_6.0.1/API_changes
+- cross faction auction house
+- item link revamp
+- QueryAuctionItems new return (#11): exactMatch
 --]]
 
--- GLOBALS: Auctional, AuctionalGDB, AuctionFrameTab2, AuctionFrameTab3
+-- GLOBALS: Auctional, AuctionalDB, AuctionFrameTab2, AuctionFrameTab3
 -- GLOBALS: GetRealmName, UnitFactionGroup, GetAuctionBuyout, GetItemInfo, GetDisenchantValue
 -- GLOBALS: assert, string, pairs, type, wipe, tonnumber
 
@@ -73,17 +78,17 @@ local function eventHandler(frame, event, arg1, ...)
 		local _, faction = UnitFactionGroup("player")
 		realm = realm .. "_" .. faction
 
-		if not AuctionalGDB then AuctionalGDB = {} end
-		if not AuctionalGDB[realm] then AuctionalGDB[realm] = {} end
-		if not AuctionalGDB[realm]["price"] then AuctionalGDB[realm]["price"] = {} end
-		if not AuctionalGDB[realm]["userprice"] then AuctionalGDB[realm]["userprice"] = {} end
+		if not AuctionalDB then AuctionalDB = {} end
+		if not AuctionalDB[realm] then AuctionalDB[realm] = {} end
+		if not AuctionalDB[realm]["price"] then AuctionalDB[realm]["price"] = {} end
+		if not AuctionalDB[realm]["userprice"] then AuctionalDB[realm]["userprice"] = {} end
 
-		ns.DB = AuctionalGDB[realm]["price"]
-		ns.userDB = AuctionalGDB[realm]["userprice"]
+		ns.DB = AuctionalDB[realm]["price"]
+		ns.userDB = AuctionalDB[realm]["userprice"]
 
 		for option, setting in pairs(defaultSettings) do
-			if AuctionalGDB[option] == nil then
-				AuctionalGDB[option] = setting
+			if AuctionalDB[option] == nil then
+				AuctionalDB[option] = setting
 			end
 		end
 
@@ -121,7 +126,7 @@ end
 -- [x] keep scan data at most X days
 -- [ ] keep at most Y data entries for each item / keep only entries that differ no more than Z from the average price / clean time based data?
 local function PurgeUserData()
-	local historyThreshold = ns.GetNormalizedTimeStamp() - 60*60*24*AuctionalGDB.lifeSpan
+	local historyThreshold = ns.GetNormalizedTimeStamp() - 60*60*24*AuctionalDB.lifeSpan
 	ns.WalkDataTable(ns.userDB, function(dataHandle)
 		if dataHandle.history then
 			for date, price in pairs(dataHandle.history) do
@@ -133,7 +138,7 @@ local function PurgeUserData()
 	end)
 end
 local function PurgePriceData()
-	local historyThreshold = ns.GetNormalizedTimeStamp() - 60*60*24*AuctionalGDB.lifeSpan
+	local historyThreshold = ns.GetNormalizedTimeStamp() - 60*60*24*AuctionalDB.lifeSpan
 	ns.WalkDataTable(ns.DB, function(dataHandle)
 		if dataHandle.history then
 			for date, price in pairs(dataHandle.history) do

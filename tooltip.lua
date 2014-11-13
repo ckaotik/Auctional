@@ -139,7 +139,10 @@ end
 function ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
 	local vendorPrice = select(11, GetItemInfo(itemLink))
 	if not vendorPrice or vendorPrice == 0 then
-		tip:AddLine(ITEM_UNSELLABLE)
+		if not MerchantFrame:IsShown() then
+			-- prevent duplicate info
+			tip:AddLine(ITEM_UNSELLABLE)
+		end
 		return
 	end
 

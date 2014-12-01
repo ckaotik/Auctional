@@ -4,6 +4,8 @@ local addonName, ns, _ = ...
 -- GLOBALS: CreateFrame, GetCoinTextureString, GetItemInfo, MoneyFrame_Update
 -- GLOBALS: print, format, wipe, select, string, table, math, pairs
 
+-- TODO: this should be a module of the main addon, maybe?
+
 local LibGraph = LibStub("LibGraph-2.0")
 local LIC = LibStub("LibItemCrush-1.0")
 
@@ -137,20 +139,21 @@ function ns.AnyTooltipSetAuctionPrice(tip, label, text)
 end
 
 function ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
+	-- SetTooltipMoney(GameTooltip, repairCost)
 	local vendorPrice = select(11, GetItemInfo(itemLink))
+	local r, g, b = _G.HIGHLIGHT_FONT_COLOR.r, _G.HIGHLIGHT_FONT_COLOR.g, _G.HIGHLIGHT_FONT_COLOR.b
 	if not vendorPrice or vendorPrice == 0 then
 		if not MerchantFrame:IsShown() then
 			-- prevent duplicate info
-			tip:AddLine(ITEM_UNSELLABLE)
+			tip:AddLine(ITEM_UNSELLABLE, r, g, b)
 		end
 		return
 	end
 
 	vendorPrice = (stackSize or 1) * vendorPrice
 	local vendorLabel = SELL_PRICE .. (stackSize and " x"..stackSize or "")
-	local vendorText = "|cffFFFFFF"..GetCoinTextureString(vendorPrice).."|r"
-
-	tip:AddDoubleLine(vendorLabel, vendorText)
+	tip:AddDoubleLine(vendorLabel, GetCoinTextureString(vendorPrice), r, g, b, r, g, b)
+	-- SetTooltipMoney(tip, vendorPrice, 'STATIC', vendorLabel)
 end
 
 local up, down = " |TInterface\\BUTTONS\\Arrow-Up-Up:0|t", " |TInterface\\BUTTONS\\Arrow-Down-Up:0|t"

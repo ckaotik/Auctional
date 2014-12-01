@@ -51,89 +51,6 @@ function scan.HideLoading()
 	end
 	scan.loading.FadeOut:Play()
 end
-local function InitScanningStatus()
-	local scanning = CreateFrame("Frame", "Auctional_ScanningIcon", AuctionFrame)
-	scanning:SetSize(300, 30)
-	scanning:SetPoint("TOPRIGHT", AuctionFrame, "TOPRIGHT", -20, -9)
-	scanning:SetAlpha(0)
-	scanning:Hide()
-	scan.loading = scanning
-
-	-- graphical spinner, similar to -- http://wow.go-hero.net/framexml/16309/StreamingFrame.xml + .lua
-	local spinner = CreateFrame("Frame", "Auctional_ScanningIconSpin", scanning)
-	spinner:SetPoint("RIGHT", scanning, "RIGHT")
-	spinner:SetSize(30, 30) -- default: 48
-	local bgTex = spinner:CreateTexture("$parentBackground")
-	bgTex:SetAllPoints(spinner)
-	bgTex:SetDrawLayer("BACKGROUND")
-	bgTex:SetTexture("Interface\\COMMON\\StreamBackground")
-	bgTex:SetVertexColor(0,1,0)
-	local spinTex = spinner:CreateTexture("$parentStatus")
-	spinTex:SetAllPoints(spinner)
-	spinTex:SetDrawLayer("BACKGROUND")
-	spinTex:SetTexture("Interface\\COMMON\\StreamCircle")
-	spinTex:SetVertexColor(0,1,0)
-	local spark = spinner:CreateTexture()
-	spark:SetAllPoints(spinner)
-	spark:SetDrawLayer("OVERLAY")
-	spark:SetTexture("Interface\\COMMON\\StreamSpark")
-
-	scan.SetSpinnerColor = function(r, g, b)
-		bgTex:SetVertexColor(r or 0, g or 1, b or 0)
-		spinTex:SetVertexColor(r or 0, g or 1, b or 0)
-	end
-
-	-- text status
-	local statusText = scanning:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	statusText:SetPoint("RIGHT", scanning, "RIGHT", -30+2, -1)
-	statusText:SetText("Scanning...")
-	scan.loadingText = statusText
-
-	-- animations, everyone loves them!
-	scanning.FadeIn = scanning:CreateAnimationGroup()
-	local FadeInFinished = function(self, requested) scanning:SetAlpha(1); scanning:Show(); end
-	scanning.FadeIn:SetScript("OnFinished", FadeInFinished)
-	scanning.FadeIn:SetScript("OnStop", FadeInFinished)
-	local spinFadeIn = scanning.FadeIn:CreateAnimation("Alpha")
-		spinFadeIn:SetChange(1.0)
-		spinFadeIn:SetDuration(2)
-		spinFadeIn:SetOrder(1)
-
-	scanning.FadeOut = scanning:CreateAnimationGroup()
-	local FadeOutFinished = function(self, requested) scanning:SetAlpha(0); scanning:Hide(); scanning.Loop:Stop(); end
-	scanning.FadeOut:SetScript("OnFinished", FadeOutFinished)
-	scanning.FadeOut:SetScript("OnStop", FadeOutFinished)
-	local spinFadeOut = scanning.FadeOut:CreateAnimation("Alpha")
-		spinFadeOut:SetChange(-1.0)
-		spinFadeOut:SetDuration(1)
-		spinFadeOut:SetOrder(1)
-
-	scanning.Loop = spinner:CreateAnimationGroup()
-		scanning.Loop:SetLooping("REPEAT")
-	local spinLoop = scanning.Loop:CreateAnimation("Rotation")
-		spinLoop:SetDuration(4)
-		spinLoop:SetDegrees(-360)
-		spinLoop:SetOrder(1)
-end
-local function InitScanButton()
-	local button = CreateFrame("Button", nil, AuctionFrameBrowse, "UIPanelButtonTemplate")
-	button:SetPoint("TOPRIGHT", AuctionFrameBrowse, "TOPRIGHT", 40, -12) -- 70, -35
-	button:SetScript("OnUpdate", function(self)
-		local canScan, canFullScan = CanSendAuctionQuery()
-		if canScan and canFullScan then
-			self:Enable()
-		else
-			self:Disable()
-		end
-	end)
-	button:SetScript("OnClick", function(self)
-		QueryAuctionItems(nil, nil, nil, nil, nil, nil, nil, nil, nil, true)
-	end)
-	button:SetWidth(100)
-	button:SetText("Scan...")
-
-	scan.button = button
-end
 
 --[[-- Scan Management --]]--
 local lastScanIndex, batchSize, totalAuctions = 0, 0, 0
@@ -203,9 +120,9 @@ local function UpdateDataBatch()
 	end
 	lastScanIndex = lastScanIndex + AuctionalDB.actionsPerFrame
 end
-local function HandleScanResults()
+function ns:AUCTION_ITEM_LIST_UPDATE()
 	-- we don't want any interference. listener will be restarted on the next query
-	ns.UnregisterEvent("AUCTION_ITEM_LIST_UPDATE", "updatedata")
+	ns:UnregisterEvent('AUCTION_ITEM_LIST_UPDATE')
 	scan.SetSpinnerColor()
 
 	lastScanIndex = 0
@@ -258,7 +175,7 @@ end
 
 function scan.ScanStarted(...)
 	-- only listen when we know someone scanned. this avoids stray updates of seller names
-	ns.RegisterEvent("AUCTION_ITEM_LIST_UPDATE", HandleScanResults, "updatedata", true)
+	ns:RegisterEvent('AUCTION_ITEM_LIST_UPDATE')
 
 	if select(10, ...) == true then
 		scan.isFullScan = true
@@ -347,153 +264,4 @@ function scan.ScanCompleted(numItems)
 	scan.loading:SetScript("OnUpdate", nil)
 end
 
-ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
-	InitScanningStatus()
-	InitScanButton()
-
-	--[[ local reset = _G["BrowseResetButton"]
-	reset:SetText("x")
-	reset:SetWidth(30)
-	reset:ClearAllPoints()
-	reset:SetPoint("TOPLEFT", AuctionFrameBrowse, "TOPLEFT", 44, -75)
-
-	local search = _G["BrowseSearchButton"]
-	search:SetWidth(104)
-	search:ClearAllPoints()
-	search:SetPoint("TOPLEFT", AuctionFrameBrowse, "TOPLEFT", 78, -75) --]]
-
-	hooksecurefunc("QueryAuctionItems", scan.ScanStarted)
-
-	ns.UnregisterEvent("AUCTION_HOUSE_SHOW", "showspinner")
-end, "showspinner")
-ns.RegisterEvent("AUCTION_HOUSE_CLOSED", function()
-	scan.HideLoading()
-end, "hidespinner")
-
-
--- autocomplete item names
--- ----------------------------
--- GLOBALS: AutoCompleteBox, ITEM_QUALITY_COLORS, AUTOCOMPLETE_FLAG_NONE, AUTOCOMPLETE_FLAG_ALL, AUTOCOMPLETE_SIMPLE_REGEX, AUTOCOMPLETE_SIMPLE_FORMAT_REGEX
--- GLOBALS: GetItemInfo, AutoCompleteEditBox_OnChar, AutoCompleteEditBox_OnTextChanged, AutoCompleteEditBox_OnEnterPressed, AutoCompleteEditBox_OnEscapePressed, AutoCompleteEditBox_OnTabPressed, AutoCompleteEditBox_OnEditFocusLost, AutoComplete_UpdateResults
--- GLOBALS: strlen
-local function GetCleanText(text)
-	if not text then return '' end
-	-- remove |cCOLOR|r, |TTEXTURE|t and appended info
-	text = text:gsub("\124c........", ""):gsub("\124r", ""):gsub("\124T[^\124]-\124t ", ""):gsub(" %(.-%)$", "") -- :trim()
-	return text
-end
-
-local AIC_BATTLEPET = select(11, GetAuctionItemClasses())
-
--- [[
-local lastQuery, queryResults = nil, {}
-local function UpdateAutoComplete(parent, text, cursorPosition)
-	if cursorPosition > strlen(text) or text == '' then return end
-	if parent == BrowseName then
-		wipe(queryResults)
-		-- TODO: sort inverse so we can get 'last searched' entries
-		for _, item in pairs(scan.history) do
-			local suggestion, _, quality, iLevel, _, class, subClass, _, equipSlot = ns.GetItemInfo(item)
-			      suggestion = suggestion or item
-
-			-- TODO: allow searching for type, level, slot, ...
-			if strtrim(text) == '' or suggestion:lower():find('^'..text:lower()) then
-				if quality then
-					if equipSlot and equipSlot ~= "" then
-						suggestion = ("%s%s|r (%d %s)"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion, iLevel, _G[equipSlot])
-					elseif class == AIC_BATTLEPET then
-						local icon = "Interface\\PetBattles\\PetIcon-"..PET_TYPE_SUFFIX[subClass]
-						suggestion = ("|T%s:%s|t %s%s|r"):format(icon, '0:0:0:0:128:256:63:102:129:168', ITEM_QUALITY_COLORS[quality].hex, suggestion)
-					else
-						suggestion = ("%s%s|r"):format(ITEM_QUALITY_COLORS[quality].hex, suggestion)
-					end
-				end
-
-				local index
-				for i, entry in pairs(queryResults) do
-					if entry.name == suggestion then
-						index = i
-						break
-					end
-				end
-
-				if not index then
-					index = #queryResults + 1
-					queryResults[index] = {}
-				end
-
-				queryResults[index].name = suggestion
-				queryResults[index].priority = LE_AUTOCOMPLETE_PRIORITY_OTHER
-			end
-		end
-		-- table.sort(queryResults, SortNames)
-		AutoComplete_UpdateResults(AutoCompleteBox, queryResults)
-
-		-- also write out the first match
-		local currentText = parent:GetText()
-		if queryResults[1] and currentText ~= lastQuery then
-			lastQuery = currentText
-			local newText = currentText:gsub(parent.autoCompleteRegex or AUTOCOMPLETE_SIMPLE_REGEX,
-				(parent.autoCompleteFormatRegex or AUTOCOMPLETE_SIMPLE_FORMAT_REGEX):format(
-					GetCleanText(queryResults[1].name),
-					currentText:match(parent.autoCompleteRegex or AUTOCOMPLETE_SIMPLE_REGEX)
-				), 1)
-
-			parent:SetText( GetCleanText(newText) )
-			parent:HighlightText(strlen(currentText), strlen(newText))
-			parent:SetCursorPosition(strlen(currentText))
-		end
-	end
-end
-local function CleanAutoCompleteOutput(self, ...)
-	local editBox = self:GetParent().parent
-	if not editBox.addSpaceToAutoComplete then
-		local newText = GetCleanText( self:GetText() )
-		editBox:SetText(newText)
-		editBox:SetCursorPosition(strlen(newText))
-	end
-end
---]]
-
-ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
-	local editBox = BrowseName
-	editBox.autoCompleteParams = { include = AUTOCOMPLETE_FLAG_NONE, exclude = AUTOCOMPLETE_FLAG_ALL }
-	editBox.addHighlightedText = true
-	editBox.autoCompleteContext = 'none'
-	editBox.tiptext = 'Enter space to see a list of recent searches.'
-
-	local original = editBox:GetScript("OnTabPressed")
-	editBox:SetScript("OnTabPressed", function(self)
-		if not AutoCompleteEditBox_OnTabPressed(self) then
-			original(self)
-		end
-	end)
-	-- original = editBox:GetScript("OnEnterPressed")
-	editBox:SetScript("OnEnterPressed", function(self)
-		if not AutoCompleteEditBox_OnEnterPressed(self) then
-			-- original(self)
-			AuctionFrameBrowse_Search()
-			self:ClearFocus()
-		end
-	end)
-	original = editBox:GetScript("OnEscapePressed")
-	editBox:SetScript("OnEscapePressed", function(self)
-		if not AutoCompleteEditBox_OnEscapePressed(self) then
-			original(self)
-		end
-	end)
-	editBox:HookScript("OnEditFocusLost", AutoCompleteEditBox_OnEditFocusLost)
-	editBox:HookScript("OnTextChanged", AutoCompleteEditBox_OnTextChanged)
-	editBox:HookScript("OnChar", AutoCompleteEditBox_OnChar)
-	editBox:HookScript("OnEnter", ns.ShowTooltip)
-	editBox:HookScript("OnLeave", ns.HideTooltip)
-
-	hooksecurefunc('AutoComplete_Update', UpdateAutoComplete)
-	for i = 1, AUTOCOMPLETE_MAX_BUTTONS do
-		_G["AutoCompleteButton"..i]:HookScript('OnClick', CleanAutoCompleteOutput)
-	end
-
-	ns.UnregisterEvent("AUCTION_HOUSE_SHOW", "autocomplete")
-end, "autocomplete")
-
--- TODO: FIXME: current bug when selecting battle pets via keyboard nothing gets added
+ns:RegisterEvent('AUCTION_HOUSE_CLOSED', function() scan.HideLoading() end)

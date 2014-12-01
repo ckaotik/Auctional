@@ -86,7 +86,8 @@ local function InitSortColumns(frame, event, ...)
 		SortButton_UpdateArrow(BrowseQuantitySort, "list", "quantity")
 	end)
 end
-ns.RegisterEvent("AUCTION_HOUSE_SHOW", function()
+-- TODO/FIXME: this can only work in a module
+ns:RegisterEvent('AUCTION_HOUSE_SHOW', function()
 	InitSortColumns()
-	ns.UnregisterEvent("AUCTION_HOUSE_SHOW", "sort")
-end, "sort")
+	ns:UnregisterEvent('AUCTION_HOUSE_SHOW')
+end)

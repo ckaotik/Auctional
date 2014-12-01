@@ -1,4 +1,4 @@
-## Interface: 50100
+## Interface: 60000
 ## Version: @project-version@
 ## Author: ckaotik
 
@@ -25,10 +25,14 @@ LibItemCrush-1.0\LibItemCrush-1.0.lua
 
 # main files
 util.lua
+database.lua
+ui.lua
 Auctional.lua
-columns.lua
-sort.lua
 scan.lua
-sell.lua
+autocomplete.lua
+
+# columns.lua
+# sort.lua
+# sell.lua
 tooltip.lua
 api.lua

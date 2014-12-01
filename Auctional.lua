@@ -1,5 +1,6 @@
-local addonName, ns, _ = ...
-Auctional = ns
+local addonName, addon, _ = ...
+LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'AceEvent-3.0')
+_G[addonName] = addon
 
 --[[
 Auctional
@@ -35,62 +36,80 @@ Changes in WoD: http://wowpedia.org/Patch_6.0.1/API_changes
 -- GLOBALS: GetRealmName, UnitFactionGroup, GetAuctionBuyout, GetItemInfo, GetDisenchantValue
 -- GLOBALS: assert, string, pairs, type, wipe, tonnumber
 
-local defaultSettings = {
-	-- scanning settings
-	bidOnlyFactor = 1.5,
-	actionsPerFrame = 200,
-	minQuality = 1,
-	lifeSpan = 30,
+local defaults = {
+	profile = {
+		-- scanning settings
+		bidOnlyFactor = 1.5,
+		actionsPerFrame = 200,
+		minQuality = 1,
+		lifeSpan = 30,
 
-	-- browse frame settings
-	perItemPrice = false,
-	showSingleItemCount = true,
-	showLevelOne = true,
-	showBothWhenEqual = true,
-	maxPriceDiffForEqual = 100, -- [TODO] percentages?
+		-- browse frame settings
+		perItemPrice = false,
+		showSingleItemCount = true,
+		showLevelOne = true,
+		showBothWhenEqual = true,
+		maxPriceDiffForEqual = 100, -- [TODO] percentages?
 
-	-- auction posting frame settings
-	priceType = 1, -- 1: per item, 2: per stack
-	startPriceDiscount = 0.05, -- 1.0 = 100% discount
-	startPriceReduction = 1, -- price reduction in copper
-	buyoutPriceDiscount = 0.05,
-	buyoutPriceReduction = 1,
+		-- auction posting frame settings
+		priceType = 1, -- 1: per item, 2: per stack
+		startPriceDiscount = 0.05, -- 1.0 = 100% discount
+		startPriceReduction = 1, -- price reduction in copper
+		buyoutPriceDiscount = 0.05,
+		buyoutPriceReduction = 1,
 
-	-- tooltip settings
-	priceCombineDifference = 50000, -- [TODO] percentages?
-	minCountForAvailable = 0, -- how often must an item be currently available to *not* show its value in red
-	showGraphFunc = IsAltKeyDown,
-	showDetailedDEFunc = IsModifierKeyDown,
-	showDEPriceFunc = function() return true end,
-	showFullStackFunc = IsModifierKeyDown,
-	dataAge = -10,
+		-- tooltip settings
+		priceCombineDifference = 50000, -- [TODO] percentages?
+		minCountForAvailable = 0, -- how often must an item be currently available to *not* show its value in red
+		dataAge = -10,
+		-- FIXME: this sucks
+		showFullStackFunc  = IsModifierKeyDown,
+		showGraphFunc      = IsAltKeyDown,
+		showDetailedDEFunc = IsModifierKeyDown,
+		showDEPriceFunc    = function() return true end,
 
-	-- static (required /reload when changed)
-	graphWidth = 140,
+		-- static (requires /reload when changed)
+		graphWidth = 140,
+	},
+	realm = { -- AuctionalPricesDB?
+		postData = {},
+		scanData = {},
+		lastScan = 0,
+	},
 }
+
+function addon:OnEnable()
+	-- self.db = LibStub('AceDB-3.0'):New(addonName..'DB', defaults, true)
+
+	-- TODO/FIXME: update to Ace
+	local realms = GetAutoCompleteRealms()
+	if realms then table.sort(realms) end
+	local realm = realms and realms[1] or GetRealmName():gsub(' ', '')
+
+	if not AuctionalDB then AuctionalDB = {} end
+	if not AuctionalDB[realm] then AuctionalDB[realm] = {} end
+	if not AuctionalDB[realm]["price"] then AuctionalDB[realm]["price"] = {} end
+	if not AuctionalDB[realm]["userprice"] then AuctionalDB[realm]["userprice"] = {} end
+
+	self.DB = AuctionalDB[realm]["price"]
+	self.userDB = AuctionalDB[realm]["userprice"]
+
+	for option, setting in pairs(defaults.profile) do
+		if AuctionalDB[option] == nil then
+			AuctionalDB[option] = setting
+		end
+	end
+
+	-- self:Purge()
+	self:RegisterEvent('AUCTION_HOUSE_SHOW', self.InitializeUI)
+	hooksecurefunc('QueryAuctionItems', self.scan.ScanStarted)
+end
 
 -- event management
 local frame, eventHooks = CreateFrame("frame"), {}
-ns.eventHooks = eventHooks
+addon.eventHooks = eventHooks
 local function eventHandler(frame, event, arg1, ...)
 	if event == "ADDON_LOADED" and arg1 == addonName then
-		local realm = GetRealmName("player")
-		local _, faction = UnitFactionGroup("player")
-		realm = realm .. "_" .. faction
-
-		if not AuctionalDB then AuctionalDB = {} end
-		if not AuctionalDB[realm] then AuctionalDB[realm] = {} end
-		if not AuctionalDB[realm]["price"] then AuctionalDB[realm]["price"] = {} end
-		if not AuctionalDB[realm]["userprice"] then AuctionalDB[realm]["userprice"] = {} end
-
-		ns.DB = AuctionalDB[realm]["price"]
-		ns.userDB = AuctionalDB[realm]["userprice"]
-
-		for option, setting in pairs(defaultSettings) do
-			if AuctionalDB[option] == nil then
-				AuctionalDB[option] = setting
-			end
-		end
 
 	elseif eventHooks[event] then
 		for id, listener in pairs(eventHooks[event]) do
@@ -101,7 +120,7 @@ end
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", eventHandler)
 
-function ns.RegisterEvent(event, callback, id, silentFail)
+function addon.OldRegisterEvent(event, callback, id, silentFail)
 	assert(callback and event and id, string.format("Usage: RegisterEvent(event, callback, id[, silentFail])"))
 
 	if not eventHooks[event] then
@@ -114,67 +133,11 @@ function ns.RegisterEvent(event, callback, id, silentFail)
 
 	eventHooks[event][id] = callback
 end
-function ns.UnregisterEvent(event, id)
+function addon.OldUnregisterEvent(event, id)
 	if not eventHooks[event] or not eventHooks[event][id] then return end
 	eventHooks[event][id] = nil
-	if ns.Count(eventHooks[event]) < 1 then
+	if addon.Count(eventHooks[event]) < 1 then
 		eventHooks[event] = nil
 		frame:UnregisterEvent(event)
 	end
 end
-
--- [x] keep scan data at most X days
--- [ ] keep at most Y data entries for each item / keep only entries that differ no more than Z from the average price / clean time based data?
-local function PurgeUserData()
-	local historyThreshold = ns.GetNormalizedTimeStamp() - 60*60*24*AuctionalDB.lifeSpan
-	ns.WalkDataTable(ns.userDB, function(dataHandle)
-		if dataHandle.history then
-			for date, price in pairs(dataHandle.history) do
-			 	if date < historyThreshold then
-					dataHandle.history[date] = nil
-				end
-			end
-		end
-	end)
-end
-local function PurgePriceData()
-	local historyThreshold = ns.GetNormalizedTimeStamp() - 60*60*24*AuctionalDB.lifeSpan
-	ns.WalkDataTable(ns.DB, function(dataHandle)
-		if dataHandle.history then
-			for date, price in pairs(dataHandle.history) do
-			 	if date < historyThreshold then
-					dataHandle.history[date] = nil
-				end
-			end
-		end
-	end)
-end
-ns.RegisterEvent("ADDON_LOADED", function()
-	PurgePriceData()
-	PurgeUserData()
-	ns.UnregisterEvent("ADDON_LOADED", "cleanDB")
-end, "cleanDB")
-
-local function ChangeTabOrder()
-	local bid, sell = AuctionFrameTab2, AuctionFrameTab3
-
-	-- BROWSE should rather be "stöbern"
-	bid:SetID(3); bid:SetText(AUCTIONS)
-	sell:SetID(2); sell:SetText(BIDS)
-
-	PanelTemplates_TabResize(bid, 0, nil, 36)
-	PanelTemplates_TabResize(sell, 0, nil, 36)
-
-	hooksecurefunc("AuctionFrameTab_OnClick", function(self, button, down, index)
-		local index = self:GetID()
-		PanelTemplates_SetTab(AuctionFrame, (index == 2 and 3) or (index == 3 and 2) or index)
-	end)
-
-	ns.UnregisterEvent("AUCTION_HOUSE_SHOW", "tabOrder")
-end
-ns.RegisterEvent("AUCTION_HOUSE_SHOW", ChangeTabOrder, "tabOrder")
-
--- "tab" key navigation
--- "enter" key create
--- "alt" click autobuy
--- create auction reminder timer (using Blizz's timer!)

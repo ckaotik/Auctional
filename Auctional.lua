@@ -4,7 +4,10 @@ _G[addonName] = addon
 
 --[[
 Auctional
-- scan handlers
+- scan
+	- hook into QueryAuctionItems
+	- store data
+	- prevent disconnect
 - tooltip
 	- GetAuctionBuyout API
 	- tooltip hooks
@@ -15,8 +18,12 @@ AuctionalUI
 - general
 	- scan button w/ cooldown timer
 	- reposition search button
+	- reposition/relabel reset button
 	- swap bids/auctions tabs
-- sell
+- buy (browse)
+	- color names: self, alts, guild members, friends
+	- enable "exact match" by default
+- sell (auctions)
 	- alt-click to sell item
 	- show competition (use GnomishAuctionShrinker style)
 		- browse frame sidebar overlay?

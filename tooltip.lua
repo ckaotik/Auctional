@@ -8,6 +8,7 @@ local addonName, ns, _ = ...
 
 local LibGraph = LibStub("LibGraph-2.0")
 local LIC = LibStub("LibItemCrush-1.0")
+local LibProcessable = LibStub("LibProcessable")
 
 local oneDay = 60*60*24
 local dataPoints, enchantDataPoints = {}, {}
@@ -20,7 +21,7 @@ local function GetHistoryDataPoints(itemID, special)
 
 	wipe(dataPoints)
 	wipe(enchantDataPoints)
-	local enchantPoints = LIC:IsCrushable(itemID) and enchantDataPoints or nil
+	local enchantPoints = LIC:GetCrushType(itemID) and enchantDataPoints or nil
 
 	-- history data
 	for i = AuctionalDB.dataAge or -6, -1 do
@@ -272,7 +273,8 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	-- no need to add these for battle pets, as they can neither be vendored nor disenchanted
 	ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
 	local hasAuctionValue = ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
-	if AuctionalDB.showDEPriceFunc() and (hasAuctionValue or LIC:CanDisenchantItem(itemLink)) then
+	local _, itemID = ns.GetLinkData(itemLink)
+	if AuctionalDB.showDEPriceFunc() and (hasAuctionValue or LibProcessable:IsDisenchantable(itemID)) then
 		ns.TooltipAddDisenchantPrice(tip, itemLink)
 	end
 

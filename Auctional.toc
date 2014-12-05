@@ -19,6 +19,7 @@
 LibStub\LibStub.lua
 LibGraph-2.0\LibGraph-2.0.lua
 LibItemCrush-1.0\LibItemCrush-1.0.lua
+LibProcessable\LibProcessable.lua
 #@end-no-lib-strip@
 
 #localization

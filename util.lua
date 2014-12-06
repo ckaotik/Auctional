@@ -49,7 +49,7 @@ end
 -- == Item Functions ==
 function ns.GetLinkData(link, anonymous)
 	if not link or type(link) ~= "string" then return end
-	local linkType, id, data = link:match("(%l+):([^:]*):?([^\124]*)") -- "^.-H([^:]+):?([^:]*):?([^|]*)")
+	local linkType, id, data = link:match("(%l+):([^:\124]*):?([^\124]*)")
 
 	if anonymous then
 		if linkType == 'battlepet' then

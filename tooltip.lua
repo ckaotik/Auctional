@@ -253,7 +253,9 @@ end
 local RECIPE = select(7, GetAuctionItemClasses())
 function ns.ShowSimpleTooltipData(tip, useLink)
 	local itemLink = useLink or select(2, tip:GetItem())
-	if not itemLink then return end
+	local linkType, itemID = ns.GetLinkData(itemLink)
+	-- TODO: get enchant scrolls enchant:158889
+	if not itemLink or not itemID or linkType ~= 'item' then return end
 
 	local itemType, _, stackSize = select(6, GetItemInfo(itemLink))
 	stackSize = (AuctionalDB.showFullStackFunc() and stackSize and stackSize > 1) and stackSize or nil
@@ -273,7 +275,6 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	-- no need to add these for battle pets, as they can neither be vendored nor disenchanted
 	ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
 	local hasAuctionValue = ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
-	local _, itemID = ns.GetLinkData(itemLink)
 	if AuctionalDB.showDEPriceFunc() and (hasAuctionValue or LibProcessable:IsDisenchantable(itemID)) then
 		ns.TooltipAddDisenchantPrice(tip, itemLink)
 	end

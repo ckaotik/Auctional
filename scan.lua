@@ -91,7 +91,7 @@ local function UpdateItem(list, index)
 	-- skip weird entries ...
 	if auctionPrice == huge or auctionPrice == 0 then return true end
 	auctionPrice = auctionPrice > 1 and floor(auctionPrice) or 1
-	-- [TODO] add some kind of reasonable stray-removal
+	-- [TODO] add some kind of reasonable outlier detection
 
 	-- save all this data!
 	dataHandle.time = time()

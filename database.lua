@@ -4,6 +4,7 @@ local addonName, addon, _ = ...
 local bonusSortTable = {}
 local function FillBonusTable(bonusID) table.insert(bonusSortTable, tonumber(bonusID)) end
 local function GetSortedBonus(bonusIDs)
+	if not bonusIDs	or bonusIDs == '' then return '' end
 	wipe(bonusSortTable)
 	bonusIDs:gsub('[^:]+', FillBonusTable)
 	table.sort(bonusSortTable)
@@ -36,7 +37,8 @@ local function Set(itemID, bonusIDs, price, count)
 		data = addon.db.realm.scanData[itemID]
 		if not data[sortedBonus] then data[sortedBonus] = {} end
 	end
-	data[sortedBonus][time()] = strjoin('|', price, count)
+	local normalizedTime = addon.GetNormalizedTimeStamp(time())
+	data[sortedBonus][normalizedTime] = strjoin('|', price, count)
 end
 
 --[[-- "top 95%" / sd / sta/lta

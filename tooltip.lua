@@ -1,6 +1,6 @@
 local addonName, ns, _ = ...
 
--- GLOBALS: AuctionalDB, _G, ITEM_UNSELLABLE, ITEM_QUALITY_COLORS, AUCTIONS, ROLL_DISENCHANT, SELL_PRICE, UNKNOWN, PVP_RECORD, UIParent
+-- GLOBALS: AuctionalDB, _G, ITEM_QUALITY_COLORS, UIParent
 -- GLOBALS: CreateFrame, GetCoinTextureString, GetItemInfo, MoneyFrame_Update
 -- GLOBALS: print, format, wipe, select, string, table, math, pairs
 
@@ -9,6 +9,11 @@ local addonName, ns, _ = ...
 local LibGraph = LibStub("LibGraph-2.0")
 local LIC = LibStub("LibItemCrush-1.0")
 local LibProcessable = LibStub("LibProcessable")
+
+local function FormatMoney(amount)
+	local text = GetCoinTextureString(amount):gsub('(%d%d%d+)', BreakUpLargeNumbers)
+	return text
+end
 
 local oneDay = 60*60*24
 local dataPoints, enchantDataPoints = {}, {}
@@ -74,7 +79,7 @@ local function GetHistoryTooltip()
 		title:SetPoint("TOPLEFT", 0, -10)
 		title:SetPoint("TOPRIGHT", 0, -10)
 		title:SetJustifyH("LEFT")
-		title:SetText(PVP_RECORD)
+		title:SetText(_G.TRACK_ACHIEVEMENT)
 		tooltip.title = title
 
 		graph:SetParent(tooltip)
@@ -84,7 +89,7 @@ local function GetHistoryTooltip()
 	return tooltip
 end
 
-local aucLineColor = {43/255, 255/255, 88/255, 1}
+local aucLineColor  = {43/255, 255/255, 88/255, 1}
 local enchLineColor = {224/255, 82/255, 255/255, 1}
 function ns.CreatePricingGraph(tip, itemLink)
 	if not graph then
@@ -98,7 +103,7 @@ function ns.CreatePricingGraph(tip, itemLink)
 	local points, enchantPoints = GetHistoryDataPoints( ns.GetItemLinkData(itemLink) )
 	if points and #points > 1 then
 		if tip.AddLine then -- currently unused
-			tip:AddLine(string.format("%s\n|T:%s:%s|t", PVP_RECORD, 50, AuctionalDB.graphWidth or 140)) -- placeholder texture
+			tip:AddLine(string.format("%s\n|T:%s:%s|t", _G.TRACK_ACHIEVEMENT, 50, AuctionalDB.graphWidth or 140)) -- placeholder texture
 			local tipLine = tip:GetName().."TextLeft"..tip:NumLines()
 			graph:ClearAllPoints()
 			graph:SetPoint("BOTTOMLEFT", tipLine, "BOTTOMLEFT", 0, 2)
@@ -122,7 +127,7 @@ end
 
 function ns.AnyTooltipSetAuctionPrice(tip, label, text)
 	if tip.AddDoubleLine then
-		tip:AddDoubleLine(label, text)
+		tip:AddDoubleLine(label, text, nil, nil, nil, 1, 1, 1)
 	else
 		if not tip.value then
 			local value = tip:CreateFontString("$parentItemValue", "ARTWORK", "GameTooltipText")
@@ -142,18 +147,18 @@ end
 function ns.TooltipAddVendorPrice(tip, itemLink, stackSize)
 	-- SetTooltipMoney(GameTooltip, repairCost)
 	local vendorPrice = select(11, GetItemInfo(itemLink))
-	local r, g, b = _G.HIGHLIGHT_FONT_COLOR.r, _G.HIGHLIGHT_FONT_COLOR.g, _G.HIGHLIGHT_FONT_COLOR.b
 	if not vendorPrice or vendorPrice == 0 then
 		if not MerchantFrame:IsShown() then
 			-- prevent duplicate info
-			tip:AddLine(ITEM_UNSELLABLE, r, g, b)
+			tip:AddLine(_G.ITEM_UNSELLABLE, r, g, b)
 		end
 		return
 	end
 
 	vendorPrice = (stackSize or 1) * vendorPrice
-	local vendorLabel = SELL_PRICE .. (stackSize and " x"..stackSize or "")
-	tip:AddDoubleLine(vendorLabel, GetCoinTextureString(vendorPrice), r, g, b, r, g, b)
+	local vendorLabel = _G.SELL_PRICE .. (stackSize and " x"..stackSize or "")
+	-- GameTooltip displays label in white, we don't
+	tip:AddDoubleLine(vendorLabel, FormatMoney(vendorPrice), nil, nil, nil, 1, 1, 1)
 	-- SetTooltipMoney(tip, vendorPrice, 'STATIC', vendorLabel)
 end
 
@@ -181,17 +186,17 @@ function ns.TooltipAddAuctionPrice(tip, itemLink, stackSize)
 	local auctionText
 	if minPrice and maxPrice and math.abs(maxPrice - minPrice) > AuctionalDB.priceCombineDifference then
 		-- this uses an ndash, i.e. alt + -
-		auctionText = string.format("%s – %s", GetCoinTextureString(minPrice), GetCoinTextureString(maxPrice))
+		auctionText = string.format("%s – %s", FormatMoney(minPrice), FormatMoney(maxPrice))
 	else
-		auctionText = string.format("%s|cFF%s%s|r", changeIndicator, color, itemPrice and GetCoinTextureString(itemPrice) or UNKNOWN)
+		auctionText = string.format("%s|cFF%s%s|r", changeIndicator, color, itemPrice and FormatMoney(itemPrice) or _G.UNKNOWN)
 	end
 
 	local auctionLabel
 	if (currentCount and currentCount > 0) then
-		auctionLabel = format(AUCTIONS.." (%s)", (currentCount and currentCount > 0 and currentCount))
+		auctionLabel = format(_G.AUCTIONS.." (%s)", (currentCount and currentCount > 0 and currentCount))
 		auctionLabel = auctionLabel .. (stackSize and " x"..stackSize or "")
 	end
-	auctionLabel = auctionLabel or AUCTIONS
+	auctionLabel = auctionLabel or _G.AUCTIONS
 
 	ns.AnyTooltipSetAuctionPrice(tip, auctionLabel, auctionText)
 	return true
@@ -227,7 +232,7 @@ end
 function ns.TooltipAddDisenchantPrice(tip, itemLink)
 	local dePrice, crushType = ns:GetCrushValue(itemLink)
 	if dePrice and dePrice > 0 then
-		tip:AddDoubleLine(crushType, "|cffFFFFFF"..GetCoinTextureString(dePrice).."|r")
+		tip:AddDoubleLine(crushType, FormatMoney(dePrice), nil, nil, nil, 1, 1, 1)
 	end
 	-- even if we don't have prices, disenchant reagents are of interest!
 	if AuctionalDB.showDetailedDEFunc() then

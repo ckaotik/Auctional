@@ -292,21 +292,23 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	end
 end
 
--- hide default vendor price without taint, yay!
-GameTooltip:HookScript("OnTooltipAddMoney", function(frame, amount, max)
+local function HideTooltipMoney(tooltip, amount, max)
 	if max then return end
+	local tipName = tooltip:GetName()
+	local moneyLine = tooltip:NumLines()
 
-	local me = frame:GetName()
-	local moneyLine = frame:NumLines()
-
-	for i=1, frame.shownMoneyFrames or 0 do
-		MoneyFrame_Update(me.."MoneyFrame"..i,0)
-		_G[me.."TextLeft"..(moneyLine+i-1)]:SetText("")
+	for i=1, tooltip.shownMoneyFrames or 0 do
+		MoneyFrame_Update(tipName.."MoneyFrame"..i, 0)
+		_G[tipName.."TextLeft"..(moneyLine+i-1)]:SetText("")
 	end
-	-- GameTooltip_ClearMoney(frame)
-end)
+	-- GameTooltip_ClearMoney(tooltip)
+end
+
+-- hide default vendor price without taint, yay!
+GameTooltip:HookScript("OnTooltipAddMoney", HideTooltipMoney)
 GameTooltip:HookScript("OnHide", function() if graph then graph:Hide() end end)
 GameTooltip:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
+ItemRefTooltip:HookScript("OnTooltipAddMoney", HideTooltipMoney)
 ItemRefTooltip:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ShoppingTooltip1:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ShoppingTooltip2:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)

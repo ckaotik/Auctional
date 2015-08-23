@@ -260,7 +260,7 @@ function ns.ShowSimpleTooltipData(tip, useLink)
 	local itemLink = useLink or select(2, tip:GetItem())
 	local linkType, itemID = ns.GetLinkData(itemLink)
 	-- TODO: get enchant scrolls enchant:158889
-	if not itemLink or not itemID or linkType ~= 'item' then return end
+	if not itemLink or not itemID or itemID == 0 or linkType ~= 'item' then return end
 
 	local itemType, _, stackSize = select(6, GetItemInfo(itemLink))
 	stackSize = (AuctionalDB.showFullStackFunc() and stackSize and stackSize > 1) and stackSize or nil
@@ -304,6 +304,16 @@ local function HideTooltipMoney(tooltip, amount, max)
 	-- GameTooltip_ClearMoney(tooltip)
 end
 
+local function HandleTradeSkillItem(self, skillIndex, reagentIndex)
+	local itemLink
+	if reagentIndex then
+		itemLink = GetTradeSkillReagentItemLink(skillIndex, reagentIndex)
+	else
+		itemLink = GetTradeSkillItemLink(skillIndex)
+	end
+	ns.ShowSimpleTooltipData(self, itemLink)
+end
+
 -- hide default vendor price without taint, yay!
 GameTooltip:HookScript("OnTooltipAddMoney", HideTooltipMoney)
 GameTooltip:HookScript("OnHide", function() if graph then graph:Hide() end end)
@@ -313,6 +323,9 @@ ItemRefTooltip:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ShoppingTooltip1:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 ShoppingTooltip2:HookScript("OnTooltipSetItem", ns.ShowSimpleTooltipData)
 
+-- hooksecurefunc(GameTooltip, 'SetQuestLogItem', ns.ShowSimpleTooltipData)
+-- hooksecurefunc(GameTooltip, 'SetQuestItem', ns.ShowSimpleTooltipData)
+hooksecurefunc(GameTooltip, 'SetTradeSkillItem', HandleTradeSkillItem)
 hooksecurefunc("BattlePetTooltipTemplate_SetBattlePet", function(tip, data)
 	local link = format("%s\124Hbattlepet:%d:%d:%d:%d:%d:%d:%d\124h[%s]\124h\124r", ITEM_QUALITY_COLORS[data.breedQuality].hex, data.speciesID, data.level, data.breedQuality, data.maxHealth, data.power, data.speed, data.name, data.name)
 
